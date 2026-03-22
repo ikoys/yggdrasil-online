@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#060d04">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
+<meta name="description" content="Yggdrasil Online - A 3D Browser MMORPG">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Yggdrasil Online</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+/* ══════════════════════════════════════════
+   ROOT VARIABLES
+══════════════════════════════════════════ */
+:root{
+  --gold:#c9a84c;--gold2:#e8c96a;--dark:#060d04;
+  --green:#1e4d1a;--leaf:#4caf50;--bark:#3a2010;
+  --hud:rgba(6,14,4,.82);--border:rgba(201,168,76,.25);
+  --fg:#e8e0c8;--red:#c0392b;--blue:#1a5276;
+  --font-title:'Cinzel',serif;--font-body:'Crimson Pro',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{overflow:hidden;background:var(--dark);font-family:var(--font-body);touch-action:none;color:var(--fg)}
+canvas#c{display:block;width:100vw;height:100vh;position:fixed;top:0;left:0}
+
+/* ══ SCREENS ══ */
+.screen{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;overflow:hidden}
+.screen.hidden{display:none!important}
+
+/* ══ AUTH SCREEN ══ */
+#s-auth{background:radial-gradient(ellipse at 50% 55%,#0d2208,#060d04 60%)}
+#s-auth::before{content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='1' fill='rgba(201,168,76,0.04)'/%3E%3C/svg%3E")}
+.auth-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:30px}
+.auth-leaf{font-size:64px;animation:leafpulse 3s ease-in-out infinite;line-height:1}
+@keyframes leafpulse{0%,100%{filter:drop-shadow(0 0 18px rgba(76,175,80,.6))}50%{filter:drop-shadow(0 0 32px rgba(76,175,80,.9))}}
+.auth-ygg{font-family:var(--font-title);font-size:48px;font-weight:900;letter-spacing:10px;
+  background:linear-gradient(180deg,var(--gold2),var(--gold),#8b6914);
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin-top:-6px}
+.auth-sub{font-family:var(--font-title);font-size:11px;letter-spacing:5px;color:rgba(201,168,76,.45);margin-top:4px}
+.auth-tagline{font-style:italic;font-size:12px;color:rgba(200,220,180,.35);letter-spacing:2px;margin-top:6px}
+.auth-box{background:rgba(6,14,4,.75);border:1px solid var(--border);border-radius:5px;
+  padding:28px 32px;width:320px;text-align:center;backdrop-filter:blur(8px)}
+.auth-title{font-family:var(--font-title);color:var(--gold);font-size:13px;letter-spacing:3px;margin-bottom:20px}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  padding:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
+  border-radius:4px;color:var(--fg);font-family:var(--font-title);font-size:12px;letter-spacing:1px;
+  cursor:pointer;transition:all .2s;margin-bottom:12px}
+.btn-google:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+.btn-guest{width:100%;padding:12px;background:linear-gradient(135deg,#1a3d14,#2d6b27);
+  border:1px solid rgba(201,168,76,.4);border-radius:4px;color:var(--gold2);
+  font-family:var(--font-title);font-size:12px;letter-spacing:2px;cursor:pointer;transition:all .2s}
+.btn-guest:hover{box-shadow:0 0 20px rgba(76,175,80,.2)}
+.auth-divider{color:rgba(201,168,76,.25);font-size:11px;letter-spacing:2px;margin:8px 0}
+.auth-note{font-size:10px;color:rgba(200,220,180,.3);margin-top:14px;font-style:italic;line-height:1.6}
+
+/* ══ CHARACTER CREATION ══ */
+#s-create{background:radial-gradient(ellipse at 50% 40%,#0d2208,#060d04 70%)}
+.create-header{font-family:var(--font-title);color:var(--gold);font-size:11px;letter-spacing:4px;
+  margin-bottom:4px;text-align:center}
+.create-step-title{font-family:var(--font-title);font-size:20px;font-weight:700;
+  color:var(--gold2);text-align:center;margin-bottom:24px;letter-spacing:2px}
+.create-box{background:var(--hud);border:1px solid var(--border);border-radius:5px;
+  padding:24px 28px;width:380px;max-height:80vh;overflow-y:auto}
+/* Step indicators */
+.steps{display:flex;justify-content:center;gap:8px;margin-bottom:24px}
+.step-dot{width:8px;height:8px;border-radius:50%;background:rgba(201,168,76,.2);
+  border:1px solid rgba(201,168,76,.3);transition:all .3s}
+.step-dot.active{background:var(--gold);box-shadow:0 0 8px rgba(201,168,76,.5)}
+.step-dot.done{background:var(--leaf)}
+/* Name input */
+.input-field{width:100%;padding:12px 14px;background:rgba(0,0,0,.4);
+  border:1px solid rgba(201,168,76,.3);border-radius:3px;color:var(--fg);
+  font-family:var(--font-title);font-size:13px;letter-spacing:1px;outline:none;
+  transition:border-color .2s}
+.input-field:focus{border-color:var(--gold)}
+.input-label{font-family:var(--font-title);font-size:10px;color:rgba(201,168,76,.6);
+  letter-spacing:2px;margin-bottom:8px;display:block}
+/* Class selection */
+.class-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.cls-card{padding:14px 8px;border:1px solid rgba(201,168,76,.2);border-radius:4px;
+  background:rgba(0,0,0,.3);cursor:pointer;text-align:center;transition:all .2s}
+.cls-card:hover,.cls-card.sel{border-color:var(--gold);background:rgba(201,168,76,.1);
+  transform:translateY(-3px)}
+.cls-card .ci{font-size:28px;display:block;margin-bottom:6px}
+.cls-card .cn{font-family:var(--font-title);color:var(--gold2);font-size:11px;font-weight:700;letter-spacing:.5px}
+.cls-card .cd{font-size:10px;color:rgba(200,220,180,.5);font-style:italic;margin-top:4px;line-height:1.4}
+.cls-stats{display:flex;gap:3px;justify-content:center;margin-top:6px}
+.sp{width:6px;height:6px;border-radius:50%;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.2)}
+.sp.on{background:var(--gold)}
+/* Appearance */
+.appear-section{margin-bottom:18px}
+.appear-label{font-family:var(--font-title);font-size:10px;color:rgba(201,168,76,.55);letter-spacing:2px;margin-bottom:8px;display:block}
+.color-row{display:flex;gap:8px;flex-wrap:wrap}
+.color-opt{width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.color-opt.sel{border-color:var(--gold);transform:scale(1.15);box-shadow:0 0 10px rgba(201,168,76,.5)}
+.face-row{display:flex;gap:8px}
+.face-opt{width:44px;height:36px;border:1px solid rgba(201,168,76,.2);border-radius:3px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;
+  background:rgba(0,0,0,.3);transition:all .2s}
+.face-opt.sel{border-color:var(--gold);background:rgba(201,168,76,.1)}
+/* Buttons */
+.btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#1a3d14,#2d6b27);
+  border:1px solid rgba(201,168,76,.4);border-radius:3px;color:var(--gold2);
+  font-family:var(--font-title);font-size:13px;letter-spacing:3px;cursor:pointer;
+  transition:all .2s;margin-top:14px}
+.btn-primary:hover{box-shadow:0 0 20px rgba(76,175,80,.2);transform:translateY(-1px)}
+.btn-back{background:none;border:1px solid rgba(201,168,76,.2);border-radius:3px;
+  color:rgba(201,168,76,.5);font-family:var(--font-title);font-size:10px;letter-spacing:2px;
+  padding:8px 18px;cursor:pointer;margin-top:8px;transition:all .2s}
+.btn-back:hover{border-color:rgba(201,168,76,.5);color:rgba(201,168,76,.8)}
+.create-footer{display:flex;flex-direction:column;align-items:center;gap:0}
+
+/* ══ FLOOR TRANSITION ══ */
+#s-transition{background:#000;z-index:300}
+.trans-content{text-align:center}
+.trans-floor{font-family:var(--font-title);font-size:11px;letter-spacing:4px;
+  color:rgba(201,168,76,.5);margin-bottom:8px}
+.trans-name{font-family:var(--font-title);font-size:32px;font-weight:900;
+  color:var(--gold2);letter-spacing:4px;margin-bottom:12px;
+  text-shadow:0 0 30px rgba(201,168,76,.4)}
+.trans-desc{font-style:italic;font-size:14px;color:rgba(200,220,180,.5);
+  max-width:350px;line-height:1.7}
+.trans-bar{width:200px;height:2px;background:rgba(201,168,76,.1);
+  border-radius:1px;margin:24px auto 0;overflow:hidden}
+.trans-progress{height:100%;background:var(--gold);width:0%;transition:width 2.5s linear;border-radius:1px}
+
+/* ══ BOSS INTRO ══ */
+#s-boss{background:rgba(0,0,0,.92);z-index:250}
+.boss-skull{font-size:80px;animation:bossAppear 1s ease-out;margin-bottom:16px}
+@keyframes bossAppear{0%{transform:scale(0) rotate(-180deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.boss-intro-title{font-family:var(--font-title);font-size:10px;letter-spacing:5px;
+  color:rgba(231,76,60,.6);margin-bottom:8px}
+.boss-intro-name{font-family:var(--font-title);font-size:28px;font-weight:900;
+  color:#e74c3c;letter-spacing:3px;text-shadow:0 0 30px rgba(231,76,60,.5)}
+
+/* ══ GAME UI ══ */
+#ui{position:fixed;inset:0;pointer-events:none;z-index:100}
+
+/* Player HUD */
+#hud{position:absolute;top:10px;left:10px;width:175px}
+.hud-top{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.lv-badge{background:linear-gradient(135deg,var(--bark),#5c3a1e);border:1px solid var(--gold);
+  color:var(--gold);font-family:var(--font-title);font-size:9px;padding:2px 7px;border-radius:2px;letter-spacing:1px}
+.hud-name{font-family:var(--font-title);color:var(--gold2);font-size:11px;font-weight:700;
+  text-shadow:0 0 8px rgba(201,168,76,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-row{margin-bottom:3px}
+.bar-lbl{color:rgba(232,224,200,.55);font-size:9px;letter-spacing:.5px;margin-bottom:1px;
+  display:flex;justify-content:space-between}
+.bar-w{width:100%;height:10px;background:rgba(0,0,0,.7);border-radius:2px;overflow:hidden;border:1px solid rgba(255,255,255,.07)}
+.bar-f{height:100%;border-radius:2px;transition:width .25s}
+#hp-f{background:linear-gradient(90deg,#7b1a1a,#c0392b,#e74c3c)}
+#mp-f{background:linear-gradient(90deg,#0d3b5e,#1a6fa8,#3498db)}
+#xp-f{background:linear-gradient(90deg,#3d2a00,var(--gold),var(--gold2));width:0%}
+
+/* Floor indicator */
+#floor-ind{position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-title);font-size:10px;letter-spacing:3px;
+  color:rgba(201,168,76,.55);background:var(--hud);border:1px solid var(--border);
+  padding:4px 14px;border-radius:2px;text-align:center}
+
+/* Target HUD */
+#thud{position:absolute;top:34px;left:50%;transform:translateX(-50%);
+  background:var(--hud);border:1px solid rgba(231,76,60,.3);
+  border-radius:4px;padding:7px 14px;display:none;min-width:180px;text-align:center}
+#t-name{font-family:var(--font-title);color:#e74c3c;font-size:11px;font-weight:700;margin-bottom:4px;letter-spacing:.5px}
+#t-hp-w{width:160px;height:9px;background:rgba(0,0,0,.6);border-radius:2px;overflow:hidden;margin:0 auto}
+#t-hp-f{height:100%;background:linear-gradient(90deg,#7b1a1a,#e74c3c);width:100%;transition:width .2s}
+
+/* Minimap */
+#mm{position:absolute;top:10px;right:10px;width:90px;height:90px;
+  border:1px solid rgba(201,168,76,.3);border-radius:3px;overflow:hidden}
+#mm-c{width:100%;height:100%}
+.mm-lbl{position:absolute;bottom:2px;left:0;right:0;text-align:center;
+  font-family:var(--font-title);font-size:7px;color:rgba(201,168,76,.4);letter-spacing:1px}
+
+/* Boss Bar */
+#bossbar{position:absolute;top:108px;left:50%;transform:translateX(-50%);
+  display:none;width:280px;text-align:center}
+#boss-nm{font-family:var(--font-title);color:#e74c3c;font-size:11px;font-weight:700;
+  margin-bottom:3px;letter-spacing:1px;text-shadow:0 0 10px rgba(231,76,60,.5)}
+#boss-w{width:100%;height:13px;background:rgba(0,0,0,.7);border-radius:2px;overflow:hidden;border:1px solid rgba(192,57,43,.35)}
+#boss-f{height:100%;background:linear-gradient(90deg,#7b1a1a,#c0392b,#e74c3c);width:100%;transition:width .3s;border-radius:2px}
+
+/* ══ DIALOGUE BOX ══ */
+#dialogue{position:absolute;bottom:160px;left:50%;transform:translateX(-50%);
+  width:min(500px,90vw);background:var(--hud);border:1px solid var(--border);
+  border-radius:5px;padding:16px 20px;display:none;pointer-events:all;
+  backdrop-filter:blur(8px);animation:slideUp .3s ease-out}
+@keyframes slideUp{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+.dlg-speaker{font-family:var(--font-title);color:var(--gold);font-size:11px;letter-spacing:2px;margin-bottom:8px}
+.dlg-text{font-size:13px;color:var(--fg);line-height:1.7;font-style:italic;margin-bottom:14px}
+.dlg-choices{display:flex;flex-direction:column;gap:6px}
+.dlg-choice{padding:9px 14px;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.25);
+  border-radius:3px;color:var(--gold2);font-family:var(--font-title);font-size:11px;
+  cursor:pointer;transition:all .15s;text-align:left;letter-spacing:.3px}
+.dlg-choice:hover{background:rgba(201,168,76,.15);border-color:var(--gold)}
+
+/* ══ QUEST TRACKER ══ */
+#quest-tracker{position:absolute;right:10px;top:110px;width:170px;
+  background:var(--hud);border:1px solid var(--border);border-radius:3px;padding:8px 10px}
+.qt-title{font-family:var(--font-title);color:var(--gold);font-size:9px;letter-spacing:2px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:5px}
+.qt-quest{margin-bottom:7px}
+.qt-qname{font-family:var(--font-title);color:var(--gold2);font-size:10px;font-weight:700;margin-bottom:3px}
+.qt-obj{font-size:10px;color:rgba(232,224,200,.6);line-height:1.5;padding-left:8px}
+.qt-obj.done{color:var(--leaf);text-decoration:line-through}
+.qt-empty{font-size:10px;color:rgba(232,224,200,.3);font-style:italic;text-align:center;padding:8px 0}
+
+/* ══ WORLD CHAT ══ */
+#chat-wrap{position:absolute;bottom:160px;left:14px;width:210px;pointer-events:all}
+#chat-log{background:rgba(6,14,4,.55);border:1px solid rgba(201,168,76,.12);border-radius:3px 3px 0 0;
+  padding:7px 9px;max-height:85px;overflow-y:auto;overflow-x:hidden}
+#chat-log::-webkit-scrollbar{width:2px}
+#chat-log::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3)}
+.cm{font-size:10px;color:rgba(232,224,200,.8);line-height:1.55}
+.cm .cn{font-weight:700;font-family:var(--font-title);font-size:9px}
+.cn.g{color:var(--leaf)}.cn.y{color:var(--gold)}.cn.b{color:#5dade2}.cn.r{color:#e74c3c}
+.chat-tabs{display:flex;gap:0}
+.chat-tab{flex:1;padding:3px 4px;background:rgba(0,0,0,.5);border:1px solid rgba(201,168,76,.1);
+  font-family:var(--font-title);font-size:8px;letter-spacing:1px;color:rgba(201,168,76,.4);
+  cursor:pointer;text-align:center;transition:all .2s}
+.chat-tab.active{background:rgba(201,168,76,.1);color:var(--gold);border-color:rgba(201,168,76,.3)}
+#chat-input-row{display:flex;gap:0;border:1px solid rgba(201,168,76,.15);border-top:none;border-radius:0 0 3px 3px;overflow:hidden}
+#chat-input{flex:1;padding:5px 8px;background:rgba(0,0,0,.6);color:var(--fg);
+  font-family:var(--font-body);font-size:11px;border:none;outline:none}
+#chat-send{padding:5px 10px;background:rgba(201,168,76,.15);border:none;border-left:1px solid rgba(201,168,76,.15);
+  color:var(--gold);font-family:var(--font-title);font-size:10px;cursor:pointer}
+
+/* ══ SKILLS ══ */
+#skills{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  display:flex;gap:7px;pointer-events:all}
+.sk{width:54px;height:54px;border-radius:4px;border:1px solid rgba(201,168,76,.35);
+  background:var(--hud);cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-size:19px;position:relative;
+  transition:all .1s;user-select:none;-webkit-user-select:none}
+.sk:active{transform:scale(.88);background:rgba(201,168,76,.15)}
+.sk.oncd{opacity:.35;pointer-events:none}
+.sk .cdtxt{position:absolute;bottom:2px;left:0;right:0;text-align:center;
+  font-family:var(--font-title);font-size:9px;color:var(--gold)}
+.sk .kh{position:absolute;top:2px;right:3px;font-size:7px;color:rgba(201,168,76,.4);font-family:var(--font-title)}
+
+/* ══ JOYSTICK ══ */
+#jzone{position:absolute;bottom:14px;left:14px;width:108px;height:108px;pointer-events:all}
+#jbase{width:108px;height:108px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.05),rgba(0,0,0,.25));border:1px solid rgba(201,168,76,.18)}
+#jthumb{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.3),rgba(201,168,76,.1));
+  border:1px solid rgba(201,168,76,.45);position:absolute;top:34px;left:34px}
+
+/* ══ ACTION BUTTONS (right side) ══ */
+#action-btns{position:absolute;bottom:14px;right:14px;display:flex;flex-direction:column;gap:8px;pointer-events:all}
+.act-btn{width:48px;height:48px;border-radius:50%;border:1px solid rgba(201,168,76,.3);
+  background:var(--hud);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;user-select:none}
+.act-btn:active{transform:scale(.88)}
+
+/* ══ FLOATING NUMBERS ══ */
+.dn{position:fixed;font-family:var(--font-title);font-weight:900;pointer-events:none;
+  text-shadow:0 2px 8px rgba(0,0,0,.9);animation:fup .95s ease-out forwards}
+@keyframes fup{0%{opacity:1;transform:translateY(0) scale(1)}60%{opacity:1;transform:translateY(-38px) scale(1.1)}100%{opacity:0;transform:translateY(-72px) scale(.8)}}
+
+/* ══ NOTIFICATION ══ */
+#notif{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);
+  font-family:var(--font-title);font-size:13px;font-weight:700;
+  opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;
+  letter-spacing:.5px;background:rgba(6,14,4,.7);border:1px solid rgba(201,168,76,.3);
+  padding:7px 22px;border-radius:3px;white-space:nowrap;text-shadow:0 2px 8px rgba(0,0,0,.9)}
+
+/* ══ KILL LOG ══ */
+#killlog{position:absolute;right:10px;bottom:130px;text-align:right;width:180px}
+.kl{font-size:10px;color:var(--gold);font-family:var(--font-title);animation:kfade 3.5s ease-out forwards;
+  text-shadow:0 1px 4px rgba(0,0,0,.9)}
+@keyframes kfade{0%{opacity:1}75%{opacity:1}100%{opacity:0}}
+
+/* ══ INVENTORY PANEL ══ */
+#inv-panel{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;
+  align-items:center;justify-content:center;pointer-events:all;z-index:150;backdrop-filter:blur(4px)}
+#inv-panel.open{display:flex}
+.panel-box{background:rgba(8,20,6,.95);border:1px solid var(--border);border-radius:5px;
+  padding:20px;width:min(420px,92vw);max-height:80vh;overflow-y:auto}
+.panel-title{font-family:var(--font-title);color:var(--gold);font-size:13px;letter-spacing:3px;
+  margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.panel-close{cursor:pointer;color:rgba(201,168,76,.5);font-size:18px;transition:color .2s}
+.panel-close:hover{color:var(--gold)}
+/* Equipment slots */
+.equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.equip-slot{background:rgba(0,0,0,.4);border:1px solid rgba(201,168,76,.2);border-radius:3px;
+  padding:10px 6px;text-align:center;min-height:70px;cursor:pointer;transition:all .2s}
+.equip-slot:hover{border-color:rgba(201,168,76,.5)}
+.slot-label{font-family:var(--font-title);font-size:8px;color:rgba(201,168,76,.4);letter-spacing:1px;margin-bottom:5px}
+.slot-item{font-size:20px}
+.slot-item-name{font-size:9px;color:var(--gold2);font-family:var(--font-title);margin-top:3px}
+.inv-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.inv-item{background:rgba(0,0,0,.4);border:1px solid rgba(201,168,76,.15);border-radius:3px;
+  padding:8px 4px;text-align:center;cursor:pointer;transition:all .2s;min-height:58px}
+.inv-item:hover{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.08)}
+.inv-icon{font-size:20px}
+.inv-name{font-size:8px;color:rgba(232,224,200,.65);font-family:var(--font-title);margin-top:3px;line-height:1.3}
+.inv-count{font-size:9px;color:var(--gold);font-family:var(--font-title)}
+.rarity-common{border-color:rgba(255,255,255,.15)!important}
+.rarity-uncommon{border-color:rgba(76,175,80,.4)!important}
+.rarity-rare{border-color:rgba(41,128,185,.5)!important}
+.rarity-epic{border-color:rgba(142,68,173,.5)!important}
+
+/* ══ QUEST LOG PANEL ══ */
+#quest-panel{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;
+  align-items:center;justify-content:center;pointer-events:all;z-index:150;backdrop-filter:blur(4px)}
+#quest-panel.open{display:flex}
+.quest-list{list-style:none}
+.quest-item{border:1px solid var(--border);border-radius:3px;padding:12px 14px;margin-bottom:10px;background:rgba(0,0,0,.3)}
+.quest-name{font-family:var(--font-title);color:var(--gold2);font-size:12px;font-weight:700;margin-bottom:5px}
+.quest-desc{font-size:11px;color:rgba(232,224,200,.6);font-style:italic;margin-bottom:8px;line-height:1.5}
+.quest-obj-list{padding-left:12px}
+.quest-obj{font-size:11px;color:rgba(232,224,200,.55);line-height:1.7}
+.quest-obj.done{color:var(--leaf)}
+.quest-rewards{margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,168,76,.15)}
+.quest-rew-label{font-family:var(--font-title);font-size:8px;color:rgba(201,168,76,.4);letter-spacing:2px;margin-bottom:4px}
+.quest-rew-items{font-size:11px;color:var(--gold);font-family:var(--font-title)}
+.quest-status{font-family:var(--font-title);font-size:9px;padding:2px 8px;border-radius:2px;
+  display:inline-block;margin-bottom:6px;letter-spacing:1px}
+.qs-active{background:rgba(41,128,185,.2);color:#5dade2;border:1px solid rgba(41,128,185,.3)}
+.qs-complete{background:rgba(76,175,80,.2);color:var(--leaf);border:1px solid rgba(76,175,80,.3)}
+.qs-available{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.25)}
+
+/* ══ NPC INTERACTION HINT ══ */
+#interact-hint{position:absolute;bottom:175px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-title);font-size:10px;letter-spacing:2px;color:var(--gold);
+  background:var(--hud);border:1px solid var(--border);padding:4px 14px;border-radius:2px;
+  display:none;pointer-events:none;animation:hintPulse 1.5s ease-in-out infinite}
+@keyframes hintPulse{0%,100%{opacity:.7}50%{opacity:1}}
+
+/* ══ GOLD DISPLAY ══ */
+#gold-disp{position:absolute;top:10px;left:195px;background:var(--hud);
+  border:1px solid var(--border);border-radius:2px;padding:3px 10px;
+  font-family:var(--font-title);font-size:10px;color:var(--gold);letter-spacing:1px}
+
+/* ══ FALLING LEAVES (title) ══ */
+#ts-leaves{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.leaf-fall{position:absolute;font-size:14px;opacity:0;animation:leaffall linear infinite}
+@keyframes leaffall{0%{opacity:0;transform:translateY(-20px) rotate(0deg)}10%{opacity:.5}90%{opacity:.2}100%{opacity:0;transform:translateY(105vh) rotate(720deg)}}
+
+/* ══ SCROLL BARS ══ */
+.panel-box::-webkit-scrollbar{width:3px}
+.panel-box::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:2px}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:480px){
+  .create-box{width:95vw;padding:16px 14px}
+  #chat-wrap{width:175px}
+  #quest-tracker{width:150px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ AUTH SCREEN ══════════ -->
+<div class="screen" id="s-auth">
+  <div id="ts-leaves"></div>
+  <div class="auth-logo">
+    <div class="auth-leaf">🍃</div>
+    <div class="auth-ygg">YGG</div>
+    <div class="auth-sub">YGGDRASIL ONLINE</div>
+    <div class="auth-tagline">Where the Nine Realms Collide</div>
+  </div>
+  <div class="auth-box">
+    <div class="auth-title">⟨ ENTER THE WORLD ⟩</div>
+    <button class="btn-google" id="btn-google" onclick="Auth.googleLogin()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 002.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 01-7.18-2.54H1.83v2.07A8 8 0 008.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 010-3.04V5.41H1.83a8 8 0 000 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 001.83 5.4L4.5 7.49a4.77 4.77 0 014.48-3.3z"/></svg>
+      Continue with Google
+    </button>
+    <div class="auth-divider">— or —</div>
+    <button class="btn-guest" onclick="Auth.guestLogin()">⟩ Play as Guest ⟨</button>
+    <div class="auth-note">Guest progress is saved locally.<br>Sign in with Google to save across devices.</div>
+  </div>
+</div>
+
+<!-- ══════════ CHARACTER CREATION ══════════ -->
+<div class="screen hidden" id="s-create">
+  <div class="create-header">⟨ NEW ADVENTURER ⟩</div>
+  <div class="create-step-title" id="create-step-title">Choose Your Name</div>
+  <div class="steps">
+    <div class="step-dot active" id="dot-0"></div>
+    <div class="step-dot" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+  </div>
+  <div class="create-box" id="create-box">
+    <!-- Filled by JS per step -->
+  </div>
+</div>
+
+<!-- ══════════ FLOOR TRANSITION ══════════ -->
+<div class="screen hidden" id="s-transition">
+  <div class="trans-content">
+    <div class="trans-floor" id="trans-floor">FLOOR 1</div>
+    <div class="trans-name" id="trans-name">Midgard's Edge</div>
+    <div class="trans-desc" id="trans-desc">The shadow-plague spreads through the outer villages…</div>
+    <div class="trans-bar"><div class="trans-progress" id="trans-prog"></div></div>
+  </div>
+</div>
+
+<!-- ══════════ BOSS INTRO ══════════ -->
+<div class="screen hidden" id="s-boss">
+  <div class="boss-skull" id="boss-emoji">💀</div>
+  <div class="boss-intro-title">⚠ FLOOR BOSS APPEARS</div>
+  <div class="boss-intro-name" id="boss-intro-name">DRAUGR WARLORD</div>
+</div>
+
+<!-- ══════════ 3D CANVAS ══════════ -->
+<canvas id="c"></canvas>
+
+<!-- ══════════ GAME UI ══════════ -->
+<div id="ui" class="hidden">
+
+  <!-- Player HUD -->
+  <div id="hud">
+    <div class="hud-top">
+      <span class="lv-badge" id="lv-badge">Lv 1</span>
+      <span class="hud-name" id="hud-name">Wanderer</span>
+    </div>
+    <div class="bar-row"><div class="bar-lbl"><span>HP</span><span id="hp-txt">160/160</span></div><div class="bar-w"><div class="bar-f" id="hp-f" style="width:100%"></div></div></div>
+    <div class="bar-row"><div class="bar-lbl"><span>MP</span><span id="mp-txt">55/55</span></div><div class="bar-w"><div class="bar-f" id="mp-f" style="width:100%"></div></div></div>
+    <div class="bar-row"><div class="bar-lbl"><span>XP</span><span id="xp-txt">0/100</span></div><div class="bar-w"><div class="bar-f" id="xp-f"></div></div></div>
+  </div>
+
+  <div id="gold-disp">🪙 <span id="gold-txt">0</span></div>
+  <div id="floor-ind">FLOOR <span id="floor-num">1</span> — <span id="floor-nm">Midgard's Edge</span></div>
+
+  <!-- Target HUD -->
+  <div id="thud"><div id="t-name">Enemy</div><div id="t-hp-w"><div id="t-hp-f"></div></div></div>
+
+  <!-- Minimap -->
+  <div id="mm"><canvas id="mm-c" width="90" height="90"></canvas><div class="mm-lbl" id="mm-lbl">MIDGARD</div></div>
+
+  <!-- Boss Bar -->
+  <div id="bossbar"><div id="boss-nm">BOSS</div><div id="boss-w"><div id="boss-f"></div></div></div>
+
+  <!-- Quest Tracker -->
+  <div id="quest-tracker">
+    <div class="qt-title">⟨ QUESTS ⟩</div>
+    <div id="qt-content"><div class="qt-empty">No active quests</div></div>
+  </div>
+
+  <!-- NPC Hint -->
+  <div id="interact-hint">[ F ] TALK</div>
+
+  <!-- Dialogue -->
+  <div id="dialogue">
+    <div class="dlg-speaker" id="dlg-speaker">Elder Sigmund</div>
+    <div class="dlg-text" id="dlg-text">…</div>
+    <div class="dlg-choices" id="dlg-choices"></div>
+  </div>
+
+  <!-- World Chat -->
+  <div id="chat-wrap">
+    <div class="chat-tabs">
+      <div class="chat-tab active" id="tab-world" onclick="Chat.setTab('world')">World</div>
+      <div class="chat-tab" id="tab-party" onclick="Chat.setTab('party')">Party</div>
+    </div>
+    <div id="chat-log"></div>
+    <div id="chat-input-row">
+      <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" autocomplete="off">
+      <button id="chat-send" onclick="Chat.send()">➤</button>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  <div id="skills">
+    <div class="sk" id="sk0"><span id="ski0">🪓</span><span class="kh">Z</span><span class="cdtxt" id="cd0"></span></div>
+    <div class="sk" id="sk1"><span id="ski1">🛡️</span><span class="kh">X</span><span class="cdtxt" id="cd1"></span></div>
+    <div class="sk" id="sk2"><span id="ski2">⚡</span><span class="kh">C</span><span class="cdtxt" id="cd2"></span></div>
+    <div class="sk" id="sk3"><span id="ski3">🍃</span><span class="kh">V</span><span class="cdtxt" id="cd3"></span></div>
+  </div>
+
+  <!-- Joystick -->
+  <div id="jzone"><div id="jbase"></div><div id="jthumb" style="position:absolute;top:34px;left:34px"></div></div>
+
+  <!-- Action Buttons -->
+  <div id="action-btns">
+    <div class="act-btn" title="Inventory" onclick="UI.toggleInventory()">🎒</div>
+    <div class="act-btn" title="Quests" onclick="UI.toggleQuestLog()">📜</div>
+  </div>
+
+  <!-- Notification -->
+  <div id="notif"></div>
+
+  <!-- Kill Log -->
+  <div id="killlog"></div>
+
+  <!-- Inventory Panel -->
+  <div id="inv-panel">
+    <div class="panel-box">
+      <div class="panel-title">
+        <span>⟨ INVENTORY ⟩</span>
+        <span class="panel-close" onclick="UI.toggleInventory()">✕</span>
+      </div>
+      <div class="panel-title" style="font-size:10px;letter-spacing:2px;margin-bottom:10px;margin-top:-10px;color:rgba(201,168,76,.5)">EQUIPMENT</div>
+      <div class="equip-grid" id="equip-slots">
+        <div class="equip-slot" data-slot="weapon"><div class="slot-label">WEAPON</div><div class="slot-item" id="eq-weapon">⬜</div><div class="slot-item-name" id="eq-weapon-name">Empty</div></div>
+        <div class="equip-slot" data-slot="armor"><div class="slot-label">ARMOR</div><div class="slot-item" id="eq-armor">⬜</div><div class="slot-item-name" id="eq-armor-name">Empty</div></div>
+        <div class="equip-slot" data-slot="accessory"><div class="slot-label">ACCESSORY</div><div class="slot-item" id="eq-accessory">⬜</div><div class="slot-item-name" id="eq-accessory-name">Empty</div></div>
+      </div>
+      <div class="panel-title" style="font-size:10px;letter-spacing:2px;margin-bottom:10px;color:rgba(201,168,76,.5)">ITEMS</div>
+      <div class="inv-grid" id="inv-grid"></div>
+    </div>
+  </div>
+
+  <!-- Quest Log Panel -->
+  <div id="quest-panel">
+    <div class="panel-box">
+      <div class="panel-title">
+        <span>⟨ QUEST LOG ⟩</span>
+        <span class="panel-close" onclick="UI.toggleQuestLog()">✕</span>
+      </div>
+      <ul class="quest-list" id="quest-list"></ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  YGGDRASIL ONLINE  ·  Phase 1  ·  World Engine
+// ═══════════════════════════════════════════════════════════════
+
+// ── Firebase Config ──────────────────────────────────────────
+// ⚠ REPLACE WITH YOUR FIREBASE PROJECT CONFIG
+// Get it from: Firebase Console → Project Settings → Your Apps → Web App
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+let fbApp=null, fbAuth=null, fbDb=null, fbRtdb=null;
+let firebaseReady=false;
+
+function initFirebase(){
+  try{
+    if(FIREBASE_CONFIG.apiKey==='YOUR_API_KEY'){console.warn('Firebase not configured — using offline mode');return;}
+    fbApp=firebase.initializeApp(FIREBASE_CONFIG);
+    fbAuth=firebase.auth();
+    fbDb=firebase.firestore();
+    fbRtdb=firebase.database();
+    firebaseReady=true;
+    console.log('Firebase ready');
+  }catch(e){console.warn('Firebase init failed:',e);firebaseReady=false;}
+}
+initFirebase();
+
+// ── Falling leaves on auth screen ──
+(()=>{
+  const c=document.getElementById('ts-leaves');
+  const leaves=['🍃','🍂','🍁','🌿'];
+  for(let i=0;i<20;i++){
+    const l=document.createElement('div');l.className='leaf-fall';
+    l.textContent=leaves[Math.floor(Math.random()*leaves.length)];
+    l.style.cssText=`left:${Math.random()*100}%;animation-duration:${6+Math.random()*10}s;animation-delay:${Math.random()*8}s;font-size:${10+Math.random()*12}px`;
+    c.appendChild(l);
+  }
+})();
+
+// ════════════════════════════════════════════════════════
+//  GAME DATA
+// ════════════════════════════════════════════════════════
+const DATA = {
+  classes:{
+    berserker:{name:'Berserker',icon:'🪓',hp:160,mp:55,atk:20,def:6,spd:4.6,bodyColor:0x7b2d00,armorColor:0x5a1a00,
+      desc:'Iron will and brute force',stats:[3,1,3,0],
+      skills:[
+        {name:'Axe Cleave',icon:'🪓',cost:0,cd:0,dmg:1.7,aoe:false,range:2.8},
+        {name:'Shield Slam',icon:'🛡️',cost:10,cd:3.5,dmg:2.3,aoe:false,range:2.5,stun:.9},
+        {name:'Berserker Rage',icon:'⚡',cost:22,cd:9,dmg:1.4,aoe:true,aoeR:5.5},
+        {name:'Bind Wounds',icon:'🍃',cost:15,cd:12,dmg:0,heal:55},
+      ]},
+    seidr:{name:'Seiðr',icon:'🔮',hp:88,mp:140,atk:30,def:2,spd:4.5,bodyColor:0x2a1a5a,armorColor:0x1a0a3a,
+      desc:'Runic magic and fate',stats:[1,0,3,4],
+      skills:[
+        {name:'Rune Bolt',icon:'🔮',cost:10,cd:0,dmg:2.9,proj:true,range:13,clr:'rune'},
+        {name:'Ice Shard',icon:'❄️',cost:15,cd:4,dmg:3.6,proj:true,range:11,clr:'ice'},
+        {name:'Wyrd Nova',icon:'🌀',cost:32,cd:11,dmg:2.1,aoe:true,aoeR:6.5},
+        {name:'Seiðr Mend',icon:'🍃',cost:0,cd:14,dmg:0,heal:38},
+      ]},
+    skald:{name:'Skald',icon:'🏹',hp:115,mp:95,atk:24,def:3,spd:5.6,bodyColor:0x1a4a2a,armorColor:0x0d2e18,
+      desc:'Swift arrows, wind-walker',stats:[2,3,1,3],
+      skills:[
+        {name:'Arrow Shot',icon:'🏹',cost:5,cd:0,dmg:2.1,proj:true,range:15,clr:'arrow'},
+        {name:'Rapid Volley',icon:'💨',cost:14,cd:4,dmg:1.2,multi:3,proj:true,range:13,clr:'arrow'},
+        {name:'Eagle Strike',icon:'🦅',cost:24,cd:9,dmg:2.9,aoe:true,aoeR:7},
+        {name:'Forest Herb',icon:'🍃',cost:0,cd:12,dmg:0,heal:42},
+      ]},
+  },
+
+  floors:{
+    1:{name:"Midgard's Edge",mmLabel:'MIDGARD',bgColor:0x3a5c30,fogColor:0x2a4522,fogDensity:.016,
+      ambientColor:0x4a7a3a,sunColor:0xfff0cc,
+      enemies:['draugr','darkElf'],boss:'draugrWarlord',
+      quests:['firstBlood','wolfsbane','darkRumor'],
+      story:"The shadow-plague spreads through the outer villages. Rise, wanderer, and defend Midgard's edge.",
+      npcs:[
+        {id:'elder',name:'Elder Sigmund',icon:'👴',x:5,z:-9,color:0x8b7355,questGiver:'firstBlood',
+         dialogue:[
+           {id:'intro',speaker:'Elder Sigmund',text:'Welcome, young wanderer. Darkness stirs in the burial mounds. The Draugr have risen and threaten our village. Will you protect us?',choices:[
+             {text:'I will help. What must be done?',next:'quest'},
+             {text:'Tell me about this place.',next:'lore'},
+           ]},
+           {id:'lore',speaker:'Elder Sigmund',text:'This is the edge of Midgard — the last human settlement before the shadow realms. The World Tree Yggdrasil connects all nine realms, and something dark stirs at its roots.',choices:[
+             {text:'I will do what I can.',next:'quest'},
+           ]},
+           {id:'quest',speaker:'Elder Sigmund',text:'Slay 5 Draugr in the burial mounds to the north. Bring proof of your deeds and I will reward you.',choices:[
+             {text:'Consider it done.',next:'accept',action:'giveQuest:firstBlood'},
+             {text:'I need time to prepare.',next:'end'},
+           ]},
+           {id:'accept',speaker:'Elder Sigmund',text:'May the World Tree guide your blade. Return when the Draugr are slain.',choices:[{text:'Farewell.',next:'end'}]},
+           {id:'end',speaker:'Elder Sigmund',text:'The village depends on you. Be safe, wanderer.',choices:[{text:'Close.',action:'close'}]},
+         ]},
+        {id:'blacksmith',name:'Blacksmith Hilda',icon:'⚒️',x:-6,z:-7,color:0x6b4226,questGiver:'wolfsbane',
+         dialogue:[
+           {id:'intro',speaker:'Blacksmith Hilda',text:"My forge burns day and night, but I'm running low on wolfsbane herb — it strengthens steel against undead. Bring me 3 bundles from the forest and I'll craft you something useful.",choices:[
+             {text:'I will gather the herbs.',next:'accept',action:'giveQuest:wolfsbane'},
+             {text:'What can you craft?',next:'craft'},
+             {text:'Maybe later.',next:'end'},
+           ]},
+           {id:'craft',speaker:'Blacksmith Hilda',text:"With the right materials I can forge weapons and armor. Each piece I make is imbued with rune-craft. In this dark age, good steel is everything.",choices:[
+             {text:"I'll bring you the herbs.",next:'accept',action:'giveQuest:wolfsbane'},
+           ]},
+           {id:'accept',speaker:'Blacksmith Hilda',text:"Good. Wolfsbane grows near the old stone circles. Don't let the Draugr catch you off guard.",choices:[{text:'On my way.',action:'close'}]},
+           {id:'end',speaker:'Blacksmith Hilda',text:"Come back when you're ready. The forge is always hot.",choices:[{text:'Close.',action:'close'}]},
+         ]},
+      ]},
+
+    2:{name:'Niflheim Border',mmLabel:'NIFLHEIM',bgColor:0x1a1a2e,fogColor:0x0d0d1a,fogDensity:.022,
+      ambientColor:0x2a2a4a,sunColor:0xaab0d0,
+      enemies:['shadowWraith','iceSkeleton'],boss:'frostbornJarl',
+      quests:['spiritCleanse','frozenKey','iceGuardian'],
+      story:'The mist of Niflheim seeps into Midgard. Wraiths walk where the living should not tread.',
+      npcs:[
+        {id:'wanderer',name:'Wanderer Björn',icon:'🧭',x:4,z:-8,color:0x4a4a6a,questGiver:'spiritCleanse',
+         dialogue:[
+           {id:'intro',speaker:'Wanderer Björn',text:"You made it this far? This border with Niflheim is crawling with Shadow Wraiths. They grow stronger with every soul they consume. We must cleanse them before they reach Midgard.",choices:[
+             {text:'How many must I defeat?',next:'quest'},
+             {text:'What happened here?',next:'lore'},
+           ]},
+           {id:'lore',speaker:'Wanderer Björn',text:"The border thinned when the World Tree weakened. Now the dead bleed through. These Wraiths were once wanderers like us — lost souls twisted by Niflheim's cold.",choices:[
+             {text:"I'll drive them back.",next:'quest'},
+           ]},
+           {id:'quest',speaker:'Wanderer Björn',text:'Defeat 8 Shadow Wraiths. Show the realm of death that the living still have teeth.',choices:[
+             {text:'Consider it done.',next:'accept',action:'giveQuest:spiritCleanse'},
+             {text:'Not yet.',next:'end'},
+           ]},
+           {id:'accept',speaker:'Wanderer Björn',text:'Strike fast — Wraiths reform if you hesitate. May Odin guide your strike.',choices:[{text:'For Midgard.',action:'close'}]},
+           {id:'end',speaker:'Wanderer Björn',text:'Return when you are ready. Every moment we wait they grow bolder.',choices:[{text:'Close.',action:'close'}]},
+         ]},
+      ]},
+
+    3:{name:"Jötunn's Pass",mmLabel:"JÖTUNHEIM",bgColor:0x1a2a3a,fogColor:0x0d1a22,fogDensity:.019,
+      ambientColor:0x3a4a5a,sunColor:0xccddff,
+      enemies:['frostScout','wargWolf'],boss:'thrymKing',
+      quests:['mountainToll','gateKeeper'],
+      story:"The Frost Giants march. Their king, Thrym, seeks to shatter the World Tree's roots and plunge all realms into eternal winter.",
+      npcs:[
+        {id:'dwarf',name:'Dwarven Scout Durinn',icon:'⛏️',x:3,z:-10,color:0x8b6914,questGiver:'mountainToll',
+         dialogue:[
+           {id:'intro',speaker:'Dwarven Scout Durinn',text:"By Odin's beard — a fighter! The Frost Giants have blocked the pass. Ten of their scouts patrol this valley. Clear them and I can signal the dwarven artillery to begin the assault on Thrym's gate.",choices:[
+             {text:"I'll clear the path.",next:'accept',action:'giveQuest:mountainToll'},
+             {text:'Tell me about Thrym.',next:'lore'},
+           ]},
+           {id:'lore',speaker:'Dwarven Scout Durinn',text:"Thrym is the Frost Giant King — ancient, cruel, and furious since Thor took his hammer. He wants to freeze Yggdrasil's roots and unmake the connection between realms. This cannot be allowed.",choices:[
+             {text:"He will fall.",next:'accept',action:'giveQuest:mountainToll'},
+           ]},
+           {id:'accept',speaker:'Dwarven Scout Durinn',text:"Ha! I like your spirit. Defeat 10 Frost Scouts and return to me. Then we take the gate together!",choices:[{text:'For Yggdrasil!',action:'close'}]},
+           {id:'end',speaker:'Dwarven Scout Durinn',text:"The path to Thrym won't open itself. Come back ready to fight.",choices:[{text:'Close.',action:'close'}]},
+         ]},
+      ]},
+  },
+
+  enemies:{
+    draugr:{name:'Draugr',color:0x4a6a4a,sz:.9,hp:50,atk:8,spd:1.8,xp:15,gold:[2,8],shp:'box',aggr:7,
+      drops:[{item:'wolfsbane',chance:.3,qty:1},{item:'rustySword',chance:.15,qty:1},{item:'hpPotion',chance:.25,qty:1}]},
+    darkElf:{name:'Dark Elf',color:0x3a2a5a,sz:.88,hp:70,atk:13,spd:2.5,xp:28,gold:[5,14],shp:'box',aggr:7.5,
+      drops:[{item:'darkElfBow',chance:.12,qty:1},{item:'mpPotion',chance:.2,qty:1}]},
+    draugrWarlord:{name:'Draugr Warlord',color:0x2a4a2a,sz:1.5,hp:500,atk:22,spd:1.6,xp:200,gold:[50,100],boss:true,shp:'boss',aggr:20,emoji:'💀',
+      drops:[{item:'warlordsAxe',chance:1,qty:1},{item:'chainMail',chance:.6,qty:1}]},
+    shadowWraith:{name:'Shadow Wraith',color:0x2a1a3a,sz:1.0,hp:90,atk:18,spd:2.8,xp:38,gold:[8,20],shp:'ghost',aggr:8,
+      drops:[{item:'shadowEssence',chance:.4,qty:1},{item:'hpPotion',chance:.3,qty:1}]},
+    iceSkeleton:{name:'Ice Skeleton',color:0x9ae0f0,sz:.95,hp:110,atk:20,spd:2.2,xp:45,gold:[10,22],shp:'box',aggr:8.5,
+      drops:[{item:'iceCrystal',chance:.35,qty:1},{item:'ironSword',chance:.1,qty:1}]},
+    frostbornJarl:{name:'Frostborn Jarl',color:0x4a6a9a,sz:1.6,hp:800,atk:35,spd:1.5,xp:350,gold:[80,150],boss:true,shp:'boss',aggr:20,emoji:'❄️',
+      drops:[{item:'frostBlade',chance:1,qty:1},{item:'icePlate',chance:.55,qty:1}]},
+    frostScout:{name:'Frost Giant Scout',color:0x4a5a7a,sz:1.3,hp:140,atk:25,spd:2.0,xp:55,gold:[12,28],shp:'box',aggr:9,
+      drops:[{item:'frostBlade',chance:.12,qty:1},{item:'hpPotion',chance:.3,qty:1}]},
+    wargWolf:{name:'Warg Wolf',color:0x5a4a3a,sz:1.0,hp:120,atk:22,spd:3.2,xp:48,gold:[10,24],shp:'wolf',aggr:8.5,
+      drops:[{item:'wolfFang',chance:.5,qty:2},{item:'hpPotion',chance:.25,qty:1}]},
+    thrymKing:{name:'King Thrym',color:0x2a3a5a,sz:2.0,hp:1200,atk:50,spd:1.4,xp:600,gold:[150,250],boss:true,shp:'boss',aggr:20,emoji:'👑',
+      drops:[{item:'thrymsCrown',chance:1,qty:1},{item:'frostPlate',chance:.7,qty:1}]},
+  },
+
+  items:{
+    hpPotion:{name:'HP Potion',icon:'🧪',type:'consumable',effect:{hp:80},rarity:'common',desc:'Restores 80 HP'},
+    mpPotion:{name:'MP Potion',icon:'💧',type:'consumable',effect:{mp:50},rarity:'common',desc:'Restores 50 MP'},
+    wolfsbane:{name:'Wolfsbane',icon:'🌿',type:'material',rarity:'common',desc:'An herb that strengthens steel against undead'},
+    shadowEssence:{name:'Shadow Essence',icon:'🔮',type:'material',rarity:'uncommon',desc:'Distilled darkness from a slain Wraith'},
+    iceCrystal:{name:'Ice Crystal',icon:'❄️',type:'material',rarity:'uncommon',desc:'A shard of pure Niflheim ice'},
+    wolfFang:{name:'Wolf Fang',icon:'🦷',type:'material',rarity:'common',desc:'A sharp fang from a Warg Wolf'},
+    // Weapons
+    rustySword:{name:'Rusty Sword',icon:'⚔️',type:'weapon',stats:{atk:3},rarity:'common',desc:'An old blade, better than bare hands'},
+    ironSword:{name:'Iron Sword',icon:'🗡️',type:'weapon',stats:{atk:8},rarity:'common',desc:'A sturdy iron blade'},
+    warlordsAxe:{name:"Warlord's Axe",icon:'🪓',type:'weapon',stats:{atk:18,def:2},rarity:'rare',desc:"The Draugr Warlord's massive axe"},
+    frostBlade:{name:'Frost Blade',icon:'🔷',type:'weapon',stats:{atk:22,spd:0.3},rarity:'rare',desc:'A blade that bleeds ice'},
+    thrymsCrown:{name:"Thrym's Crown",icon:'👑',type:'accessory',stats:{atk:10,def:10,hp:50},rarity:'epic',desc:"The Frost King's crown — immense power"},
+    // Armor
+    leatherArmor:{name:'Leather Armor',icon:'🥋',type:'armor',stats:{def:4,hp:20},rarity:'common',desc:'Basic leather protection'},
+    chainMail:{name:'Chain Mail',icon:'🔗',type:'armor',stats:{def:9,hp:35},rarity:'uncommon',desc:'Interlocked rings of iron'},
+    icePlate:{name:'Ice Plate',icon:'🧊',type:'armor',stats:{def:15,hp:60},rarity:'rare',desc:'Armor forged from Niflheim ice'},
+    frostPlate:{name:'Frost Plate',icon:'🛡️',type:'armor',stats:{def:22,hp:100,spd:-0.3},rarity:'epic',desc:"Thrym's personal armor — incredible defense"},
+    // Accessories
+    hpCharm:{name:'HP Charm',icon:'❤️',type:'accessory',stats:{hp:30},rarity:'common',desc:'A simple charm that bolsters vitality'},
+  },
+
+  quests:{
+    firstBlood:{name:'First Blood',floor:1,giver:'elder',
+      desc:'Prove yourself to Elder Sigmund by driving back the Draugr menace.',
+      objectives:[{type:'kill',enemy:'draugr',count:5,current:0,label:'Slay Draugr'}],
+      rewards:{xp:150,gold:60,items:['ironSword']},
+      completionDialogue:"You've done it! The burial mounds are quieter now. Take this sword — you've earned it. But I fear this is only the beginning…"},
+    wolfsbane:{name:"Blacksmith's Request",floor:1,giver:'blacksmith',
+      desc:'Gather wolfsbane herbs from the forest for Blacksmith Hilda.',
+      objectives:[{type:'collect',item:'wolfsbane',count:3,current:0,label:'Collect Wolfsbane'}],
+      rewards:{xp:100,gold:40,items:['leatherArmor','hpPotion','hpPotion']},
+      completionDialogue:"Excellent work! These herbs are perfect. Here — I've prepared some armor and potions for you. Stay sharp out there."},
+    darkRumor:{name:'The Dark Rumor',floor:1,giver:'elder',
+      desc:"Reach the northern burial mound and investigate the source of the Draugr's power.",
+      objectives:[{type:'reach',zone:'bossArena',current:0,count:1,label:'Reach the Burial Mound'}],
+      rewards:{xp:200,gold:0},
+      completionDialogue:"So you've seen it… A Warlord commands them. This is grave news. You must defeat it before it marshals a true army."},
+    spiritCleanse:{name:'Spirit Cleanse',floor:2,giver:'wanderer',
+      desc:'Defeat 8 Shadow Wraiths haunting the Niflheim Border.',
+      objectives:[{type:'kill',enemy:'shadowWraith',count:8,current:0,label:'Defeat Shadow Wraiths'}],
+      rewards:{xp:280,gold:90,items:['chainMail','mpPotion']},
+      completionDialogue:"The mist thins a little! Well fought. These souls can rest now — or at least stop attacking us."},
+    frozenKey:{name:'The Frozen Key',floor:2,giver:'wanderer',
+      desc:'Collect 5 Ice Crystals from Ice Skeletons to forge a key to the Jarl\'s chamber.',
+      objectives:[{type:'collect',item:'iceCrystal',count:5,current:0,label:'Collect Ice Crystals'}],
+      rewards:{xp:220,gold:75,items:['frostBlade']},
+      completionDialogue:"The crystals — enough to forge the key! Take this blade as payment. You'll need it for the Jarl."},
+    iceGuardian:{name:'Ice Guardian',floor:2,giver:'wanderer',
+      desc:'Slay the Frostborn Jarl who guards the path deeper into the shadow realms.',
+      objectives:[{type:'kill',enemy:'frostbornJarl',count:1,current:0,label:'Slay Frostborn Jarl'}],
+      rewards:{xp:400,gold:120},
+      completionDialogue:"The Jarl falls! The path north opens. But be warned — what lies beyond is ancient and cold beyond measure."},
+    mountainToll:{name:'Mountain Toll',floor:3,giver:'dwarf',
+      desc:"Clear 10 Frost Giant Scouts from Jötunn's Pass.",
+      objectives:[{type:'kill',enemy:'frostScout',count:10,current:0,label:'Defeat Frost Scouts'}],
+      rewards:{xp:380,gold:130,items:['icePlate','hpPotion','hpPotion','hpPotion']},
+      completionDialogue:"Ha! Every last one! The path is clear. Now — to Thrym's gate. This is what we've been building toward."},
+    gateKeeper:{name:'The Gate Keeper',floor:3,giver:'dwarf',
+      desc:"Defeat King Thrym and end the Frost Giant threat to Yggdrasil's roots.",
+      objectives:[{type:'kill',enemy:'thrymKing',count:1,current:0,label:'Defeat King Thrym'}],
+      rewards:{xp:800,gold:300,items:['thrymsCrown']},
+      completionDialogue:"THRYM FALLS! By all nine realms — you did it! Yggdrasil's roots are safe… for now. But the tree speaks of darker threats ahead. Rest, wanderer. You've earned it."},
+  },
+};
+
+// ════════════════════════════════════════════════════════
+//  GAME STATE
+// ════════════════════════════════════════════════════════
+const STATE = {
+  uid:null, username:'Wanderer', cls:'berserker',
+  skin:'#d4a882', hairColor:'#3a2010', eyeColor:'#3a5a8a',
+  lv:1, xp:0, xpNext:100,
+  maxHp:160, hp:160, maxMp:55, mp:55, atk:20, def:6, spd:4.6,
+  gold:0, floor:1,
+  quests:{}, // questId: {status:'active'|'complete', objectives:[...]}
+  inventory:[], // [{id, qty}]
+  equipped:{weapon:null, armor:null, accessory:null},
+  completedFloors:[],
+  target:null, atkCd:0, iFrame:0,
+  skillCds:[0,0,0,0],
+  nearNpc:null,
+  inBossFight:false,
+  chatTab:'world',
+};
+
+// ════════════════════════════════════════════════════════
+//  AUTH SYSTEM
+// ════════════════════════════════════════════════════════
+const Auth = {
+  user:null,
+  async googleLogin(){
+    if(!firebaseReady){this.guestLogin();return;}
+    try{
+      const provider=new firebase.auth.GoogleAuthProvider();
+      const res=await fbAuth.signInWithPopup(provider);
+      this.user=res.user;
+      await this.checkPlayer();
+    }catch(e){console.error(e);showNotif('Login failed. Try Guest mode.','#e74c3c');}
+  },
+  guestLogin(){
+    this.user={uid:'guest_'+Date.now(),displayName:'Wanderer',isGuest:true};
+    STATE.uid=this.user.uid;
+    const saved=localStorage.getItem('ygg_save');
+    if(saved){
+      try{Object.assign(STATE,JSON.parse(saved));showScreen('game');Game.init();}
+      catch(e){showScreen('create');}
+    }else{showScreen('create');}
+  },
+  async checkPlayer(){
+    STATE.uid=this.user.uid;
+    if(!firebaseReady){this.guestLogin();return;}
+    try{
+      const doc=await fbDb.collection('players').doc(STATE.uid).get();
+      if(doc.exists){Object.assign(STATE,doc.data());showScreen('game');Game.init();}
+      else{showScreen('create');}
+    }catch(e){console.error(e);showScreen('create');}
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  SAVE SYSTEM
+// ════════════════════════════════════════════════════════
+const Save = {
+  async save(){
+    const data={
+      uid:STATE.uid,username:STATE.username,cls:STATE.cls,
+      skin:STATE.skin,hairColor:STATE.hairColor,eyeColor:STATE.eyeColor,
+      lv:STATE.lv,xp:STATE.xp,xpNext:STATE.xpNext,
+      maxHp:STATE.maxHp,hp:STATE.hp,maxMp:STATE.maxMp,mp:STATE.mp,
+      atk:STATE.atk,def:STATE.def,spd:STATE.spd,gold:STATE.gold,floor:STATE.floor,
+      quests:STATE.quests,inventory:STATE.inventory,equipped:STATE.equipped,
+      completedFloors:STATE.completedFloors,
+    };
+    localStorage.setItem('ygg_save',JSON.stringify(data));
+    if(firebaseReady&&STATE.uid&&!Auth.user?.isGuest){
+      try{await fbDb.collection('players').doc(STATE.uid).set(data);}
+      catch(e){console.warn('Cloud save failed:',e);}
+    }
+  },
+  autoSave(){setInterval(()=>this.save(),30000);}
+};
+
+// ════════════════════════════════════════════════════════
+//  CHAT SYSTEM
+// ════════════════════════════════════════════════════════
+const Chat={
+  tab:'world',
+  msgs:[],
+  setTab(t){
+    this.tab=t;
+    document.querySelectorAll('.chat-tab').forEach(el=>el.classList.remove('active'));
+    document.getElementById('tab-'+t)?.classList.add('active');
+  },
+  send(){
+    const inp=document.getElementById('chat-input');
+    const msg=inp.value.trim();
+    if(!msg)return;
+    inp.value='';
+    const entry={name:STATE.username,msg,cls:STATE.cls,time:Date.now()};
+    this.addMsg(entry,true);
+    if(firebaseReady&&this.tab==='world'){
+      try{fbRtdb.ref('worldchat').push(entry);}catch(e){}
+    }
+  },
+  addMsg({name,msg,cls},own=false){
+    const log=document.getElementById('chat-log');
+    const d=document.createElement('div');d.className='cm';
+    const clr=cls==='berserker'?'r':cls==='seidr'?'b':'g';
+    d.innerHTML=`<span class="cn ${clr}">${name}:</span> ${msg}`;
+    log.appendChild(d);
+    while(log.children.length>30)log.removeChild(log.firstChild);
+    log.scrollTop=log.scrollHeight;
+  },
+  listenWorld(){
+    if(!firebaseReady)return;
+    try{
+      fbRtdb.ref('worldchat').limitToLast(20).on('child_added',(snap)=>{
+        const d=snap.val();
+        if(d.name!==STATE.username)this.addMsg(d);
+      });
+    }catch(e){}
+  },
+  initNPCChat(){
+    // Simulated NPC world messages
+    const npcMsgs=[
+      {name:'Leif',msg:'Has anyone reached Floor 2 yet?',cls:'skald'},
+      {name:'Astrid',msg:'The Draugr Warlord is TOUGH!',cls:'seidr'},
+      {name:'Ragnar',msg:'LFP for boss fights!',cls:'berserker'},
+      {name:'Freyja',msg:'Where do Shadow Wraiths spawn?',cls:'seidr'},
+      {name:'Björk',msg:'The World Tree glows brighter today 🍃',cls:'skald'},
+      {name:'Sigrid',msg:'Anyone need a party for Floor 3?',cls:'berserker'},
+    ];
+    let idx=0;
+    setInterval(()=>{
+      if(document.getElementById('ui').classList.contains('hidden'))return;
+      this.addMsg(npcMsgs[idx%npcMsgs.length]);
+      idx++;
+    },7000+Math.random()*3000);
+  }
+};
+
+// Enter key to send chat
+document.getElementById('chat-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();Chat.send();}
+  e.stopPropagation(); // prevent game input
+});
+
+// ════════════════════════════════════════════════════════
+//  CHARACTER CREATION
+// ════════════════════════════════════════════════════════
+const CharCreate = {
+  step:0, data:{name:'',cls:'berserker',skin:'#d4a882',hairColor:'#3a2010',eyeColor:'#3a5a8a'},
+  skins:['#fdbcb4','#d4a882','#c8925a','#8d5524','#4a2e1a'],
+  hairColors:['#1a0a05','#3a2010','#8b4513','#c8962a','#e8d5a8','#2a2a2a'],
+  eyeColors:['#3a5a8a','#2d7a2d','#8b4513','#4a4a4a'],
+
+  render(){
+    const box=document.getElementById('create-box');
+    const steps=['Choose Your Name','Choose Your Class','Customize Appearance'];
+    document.getElementById('create-step-title').textContent=steps[this.step];
+    for(let i=0;i<3;i++){
+      const d=document.getElementById('dot-'+i);
+      d.className='step-dot'+(i<this.step?' done':i===this.step?' active':'');
+    }
+    if(this.step===0) box.innerHTML=this._stepName();
+    else if(this.step===1) box.innerHTML=this._stepClass();
+    else box.innerHTML=this._stepAppear();
+  },
+
+  _stepName(){return`
+    <label class="input-label">YOUR NAME</label>
+    <input class="input-field" id="name-inp" type="text" placeholder="Enter your name…" maxlength="16" value="${this.data.name}" autocomplete="off">
+    <div style="margin-top:8px;font-size:10px;color:rgba(200,220,180,.3);font-style:italic">3–16 characters. This will be your identity in Yggdrasil.</div>
+    <div class="create-footer">
+      <button class="btn-primary" onclick="CharCreate.nextStep()">Continue ⟩</button>
+    </div>`;},
+
+  _stepClass(){
+    const cls=DATA.classes;
+    return`<div class="class-grid">${Object.entries(cls).map(([id,c])=>`
+      <div class="cls-card${this.data.cls===id?' sel':''}" onclick="CharCreate.selectClass('${id}')">
+        <span class="ci">${c.icon}</span>
+        <div class="cn">${c.name}</div>
+        <div class="cd">${c.desc}</div>
+        <div class="cls-stats">${c.stats.map(s=>`<div class="sp${s?' on':''}"></div><div class="sp${s>1?' on':''}"></div><div class="sp${s>2?' on':''}"></div>`).join('')}</div>
+      </div>`).join('')}</div>
+    <div class="create-footer">
+      <button class="btn-primary" onclick="CharCreate.nextStep()">Continue ⟩</button>
+      <button class="btn-back" onclick="CharCreate.prevStep()">⟨ Back</button>
+    </div>`;},
+
+  _stepAppear(){return`
+    <div class="appear-section">
+      <span class="appear-label">SKIN TONE</span>
+      <div class="color-row">${this.skins.map(c=>`<div class="color-opt${this.data.skin===c?' sel':''}" style="background:${c}" onclick="CharCreate.setSkin('${c}')"></div>`).join('')}</div>
+    </div>
+    <div class="appear-section">
+      <span class="appear-label">HAIR COLOR</span>
+      <div class="color-row">${this.hairColors.map(c=>`<div class="color-opt${this.data.hairColor===c?' sel':''}" style="background:${c}" onclick="CharCreate.setHair('${c}')"></div>`).join('')}</div>
+    </div>
+    <div class="appear-section">
+      <span class="appear-label">EYE COLOR</span>
+      <div class="color-row">${this.eyeColors.map(c=>`<div class="color-opt${this.data.eyeColor===c?' sel':''}" style="background:${c};width:28px;height:28px" onclick="CharCreate.setEye('${c}')"></div>`).join('')}</div>
+    </div>
+    <div class="create-footer">
+      <button class="btn-primary" onclick="CharCreate.finish()">Enter Yggdrasil ⟩</button>
+      <button class="btn-back" onclick="CharCreate.prevStep()">⟨ Back</button>
+    </div>`;},
+
+  selectClass(id){this.data.cls=id;this.render();},
+  setSkin(c){this.data.skin=c;this.render();},
+  setHair(c){this.data.hairColor=c;this.render();},
+  setEye(c){this.data.eyeColor=c;this.render();},
+
+  nextStep(){
+    if(this.step===0){
+      const n=document.getElementById('name-inp')?.value.trim()||'';
+      if(n.length<3){showNotif('Name must be 3–16 characters','#e74c3c');return;}
+      this.data.name=n;
+    }
+    this.step=Math.min(2,this.step+1);
+    this.render();
+  },
+  prevStep(){this.step=Math.max(0,this.step-1);this.render();},
+
+  finish(){
+    Object.assign(STATE,{
+      username:this.data.name, cls:this.data.cls,
+      skin:this.data.skin, hairColor:this.data.hairColor, eyeColor:this.data.eyeColor,
+    });
+    const c=DATA.classes[STATE.cls];
+    Object.assign(STATE,{maxHp:c.hp,hp:c.hp,maxMp:c.mp,mp:c.mp,atk:c.atk,def:c.def,spd:c.spd});
+    // Starter items
+    STATE.inventory=[{id:'hpPotion',qty:3},{id:'ironSword',qty:1}];
+    Save.save();
+    showScreen('game');
+    Game.init();
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  THREE.JS SETUP
+// ════════════════════════════════════════════════════════
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=.92;
+
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,180);
+
+function onResize(){
+  renderer.setSize(innerWidth,innerHeight);
+  cam.aspect=innerWidth/innerHeight;
+  cam.updateProjectionMatrix();
+}
+onResize();
+window.addEventListener('resize',onResize);
+
+// ── Lights ──
+const sun=new THREE.DirectionalLight(0xfff0cc,1.1);
+sun.position.set(40,80,30);
+sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-60,right:60,top:60,bottom:-60,far:180});
+const ambient=new THREE.AmbientLight(0x4a7a3a,0.8);
+const hemi=new THREE.HemisphereLight(0x6a9a5a,0x2a3a18,0.4);
+scene.add(sun,ambient,hemi);
+
+// ── Helpers ──
+function rnd(a,b){return a+Math.random()*(b-a)}
+function hexToColor(hex){return new THREE.Color(hex)}
+
+// ════════════════════════════════════════════════════════
+//  WORLD BUILDER
+// ════════════════════════════════════════════════════════
+const World = {
+  colObs:[], torches:[], currentFloor:0,
+
+  build(floorNum){
+    // Clear scene (keep lights)
+    scene.children=scene.children.filter(c=>c.isLight||c===sun||c===ambient||c===hemi);
+    this.colObs=[]; this.torches=[];
+
+    const fd=DATA.floors[floorNum];
+    scene.background=new THREE.Color(fd.bgColor);
+    scene.fog=new THREE.FogExp2(fd.fogColor,fd.fogDensity);
+    ambient.color.set(fd.ambientColor);
+    sun.color.set(fd.sunColor);
+
+    // Ground
+    const gnd=new THREE.Mesh(new THREE.PlaneGeometry(220,220),
+      new THREE.MeshLambertMaterial({color:floorNum===1?0x2d5a1e:floorNum===2?0x1a1a2e:0x1a2a3a}));
+    gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;scene.add(gnd);
+
+    // Path
+    for(let i=-6;i<=6;i++){
+      const s=new THREE.Mesh(new THREE.BoxGeometry(1.1,.07,1.1),
+        new THREE.MeshLambertMaterial({color:floorNum===1?0x5a5040:floorNum===2?0x3a2a4a:0x3a4a5a}));
+      s.position.set(i*1.12,.01,0);scene.add(s);
+    }
+
+    // Portal to boss area
+    this._makeBossPortal(0,0,-45);
+
+    // Floor-specific environment
+    if(floorNum===1) this._buildForest();
+    else if(floorNum===2) this._buildNiflheim();
+    else this._buildJotunPass();
+
+    // Spawn platform
+    const plat=new THREE.Mesh(new THREE.CylinderGeometry(5.5,6,.25,16),
+      new THREE.MeshLambertMaterial({color:floorNum===1?0x5a5040:floorNum===2?0x2a1a3a:0x3a4a5a}));
+    plat.position.y=-.13;scene.add(plat);
+
+    // Rune circle
+    const rc=new THREE.Mesh(new THREE.RingGeometry(4.2,4.8,16),
+      new THREE.MeshBasicMaterial({color:floorNum===1?0x44aa44:floorNum===2?0x8844aa:0x4488cc,
+        side:THREE.DoubleSide,transparent:true,opacity:.3}));
+    rc.rotation.x=-Math.PI/2;rc.position.y=.01;scene.add(rc);
+    this._runeCircle=rc;
+
+    // Torches
+    [[5,5],[-5,5],[5,-5],[-5,-5],[9,0],[0,9]].forEach(([x,z])=>{
+      const t=this._makeTorch(x,z,floorNum);scene.add(t);this.torches.push(t);
+    });
+
+    this.currentFloor=floorNum;
+  },
+
+  _buildForest(){
+    // Trees
+    const treeColors=[[0x2d6b27,0x1e4d1a],[0x3a7a32,0x2d6b27],[0x4a6a1a,0x3a5a10],[0x8b6914,0x6b4a0a]];
+    for(let i=0;i<70;i++){
+      let x=rnd(-85,85),z=rnd(-85,85);
+      if(Math.abs(x)<13&&Math.abs(z)<13){x+=x<0?-15:15;}
+      const s=.8+Math.random()*.6;
+      const tc=treeColors[Math.floor(Math.random()*treeColors.length)];
+      scene.add(this._makeTree(x,z,s,tc[0],tc[1]));
+      this.colObs.push({x,z,r:1.3*s});
+    }
+    for(let i=0;i<25;i++){
+      let x=rnd(-80,80),z=rnd(-80,80);
+      if(Math.abs(x)<10&&Math.abs(z)<10)x+=12;
+      scene.add(this._makeRock(x,z,0x5a5848));
+      this.colObs.push({x,z,r:.7});
+    }
+    // World tree in distance
+    scene.add(this._makeWorldTree());
+    // Grass patches
+    for(let i=0;i<40;i++){
+      const p=new THREE.Mesh(new THREE.CircleGeometry(.4+Math.random()*1.2,7),
+        new THREE.MeshLambertMaterial({color:Math.random()>.5?0x1a4a12:0x2d5a1e}));
+      p.rotation.x=-Math.PI/2;p.position.set(rnd(-90,90),.01,rnd(-90,90));scene.add(p);
+    }
+  },
+
+  _buildNiflheim(){
+    // Dark misty trees (dead/twisted)
+    for(let i=0;i<55;i++){
+      let x=rnd(-80,80),z=rnd(-80,80);
+      if(Math.abs(x)<13&&Math.abs(z)<13){x+=15;}
+      const s=.7+Math.random()*.5;
+      scene.add(this._makeDeadTree(x,z,s));
+      this.colObs.push({x,z,r:1.0*s});
+    }
+    // Ice rocks
+    for(let i=0;i<30;i++){
+      let x=rnd(-80,80),z=rnd(-80,80);
+      if(Math.abs(x)<10&&Math.abs(z)<10)x+=12;
+      scene.add(this._makeRock(x,z,0x4a6a9a));
+      this.colObs.push({x,z,r:.7});
+    }
+    // Wisps
+    for(let i=0;i<8;i++){
+      const g=new THREE.PointLight(0x8844ff,.5,6);
+      g.position.set(rnd(-50,50),1.5,rnd(-50,50));
+      scene.add(g);
+    }
+  },
+
+  _buildJotunPass(){
+    // Snow-covered rocks and boulders
+    for(let i=0;i<40;i++){
+      let x=rnd(-85,85),z=rnd(-85,85);
+      if(Math.abs(x)<13&&Math.abs(z)<13){x+=15;}
+      const s=1.0+Math.random()*1.0;
+      scene.add(this._makeRock(x,z,0x8899aa));
+      this.colObs.push({x,z,r:1.2*s});
+    }
+    // Snow patches
+    for(let i=0;i<60;i++){
+      const p=new THREE.Mesh(new THREE.CircleGeometry(.5+Math.random()*1.5,7),
+        new THREE.MeshLambertMaterial({color:0xddeeff}));
+      p.rotation.x=-Math.PI/2;p.position.set(rnd(-90,90),.01,rnd(-90,90));scene.add(p);
+    }
+    // Ice pillars
+    for(let i=0;i<15;i++){
+      let x=rnd(-70,70),z=rnd(-70,70);
+      if(Math.abs(x)<15&&Math.abs(z)<15)x+=18;
+      const pillar=new THREE.Mesh(new THREE.CylinderGeometry(.4,.6,4+Math.random()*3,6),
+        new THREE.MeshLambertMaterial({color:0x88bbdd,transparent:true,opacity:.7}));
+      pillar.position.set(x,2,z);pillar.castShadow=true;scene.add(pillar);
+      this.colObs.push({x,z,r:1});
+    }
+  },
+
+  _makeTree(x,z,s,c1,c2){
+    const g=new THREE.Group();
+    const BARK_M=new THREE.MeshLambertMaterial({color:0xd4c4a8});
+    const LEAF_M=new THREE.MeshLambertMaterial({color:c1});
+    const LEAF_M2=new THREE.MeshLambertMaterial({color:c2});
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(.1*s,.16*s,2.2*s,6),BARK_M);
+    t.position.y=1.1*s;t.castShadow=true;
+    [[1.1*s,2.6*s,LEAF_M],[.85*s,3.5*s,LEAF_M2],[.6*s,4.2*s,LEAF_M]].forEach(([r,y,m])=>{
+      const f=new THREE.Mesh(new THREE.ConeGeometry(r,r*1.6,7),m);
+      f.position.y=y;f.castShadow=true;g.add(f);
+    });
+    g.add(t);g.position.set(x,0,z);return g;
+  },
+
+  _makeDeadTree(x,z,s){
+    const g=new THREE.Group();
+    const m=new THREE.MeshLambertMaterial({color:0x2a1a2a});
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(.08*s,.14*s,2.5*s,5),m);
+    t.position.y=1.25*s;t.castShadow=true;
+    // Bare branches
+    for(let i=0;i<4;i++){
+      const b=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.05*s,.8*s,4),m);
+      b.position.set(Math.cos(i/4*Math.PI*2)*.5*s,2*s,Math.sin(i/4*Math.PI*2)*.5*s);
+      b.rotation.z=Math.cos(i/4*Math.PI*2)*.6;b.rotation.x=Math.sin(i/4*Math.PI*2)*.6;
+      g.add(b);
+    }
+    g.add(t);g.position.set(x,0,z);return g;
+  },
+
+  _makeRock(x,z,color){
+    const g=new THREE.Group();
+    const s=.3+Math.random()*.6;
+    const r=new THREE.Mesh(new THREE.DodecahedronGeometry(s),new THREE.MeshLambertMaterial({color}));
+    r.position.y=s*.4;r.rotation.set(rnd(0,2),rnd(0,3),rnd(0,1));r.castShadow=true;
+    g.add(r);g.position.set(x,0,z);return g;
+  },
+
+  _makeTorch(x,z,floor){
+    const g=new THREE.Group();
+    const col=floor===1?0xff6600:floor===2?0x8800ff:0x0088ff;
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,1.1,6),
+      new THREE.MeshLambertMaterial({color:0x3a2010}));
+    post.position.y=.55;
+    const flame=new THREE.Mesh(new THREE.ConeGeometry(.1,.22,6),
+      new THREE.MeshBasicMaterial({color:col}));
+    flame.position.y=1.25;g.userData.flame=flame;
+    const light=new THREE.PointLight(col,.9,6);light.position.y=1.2;
+    g.add(post,flame,light);g.position.set(x,0,z);return g;
+  },
+
+  _makeWorldTree(){
+    const g=new THREE.Group();
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(1.8,2.5,22,10),
+      new THREE.MeshLambertMaterial({color:0x2a1a08}));
+    t.position.y=11;t.castShadow=true;
+    [[6,20],[8,17],[9,14],[8,11],[6,8]].forEach(([r,y])=>{
+      const f=new THREE.Mesh(new THREE.SphereGeometry(r,8,6),
+        new THREE.MeshLambertMaterial({color:0x1a3d14}));
+      f.position.y=y;f.castShadow=true;g.add(f);
+    });
+    const glow=new THREE.PointLight(0x44ff44,.6,35);glow.position.y=18;
+    g.add(t,glow);g.position.set(0,0,-75);return g;
+  },
+
+  _makeBossPortal(x,y,z){
+    const g=new THREE.Group();
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(2.5,.25,8,24),
+      new THREE.MeshBasicMaterial({color:0xff4400}));
+    ring.position.set(x,2.5,z);ring.rotation.y=Math.PI/2;
+    const glow=new THREE.PointLight(0xff4400,.8,10);glow.position.set(x,2.5,z);
+    const pillarL=new THREE.Mesh(new THREE.CylinderGeometry(.2,.3,5,6),
+      new THREE.MeshLambertMaterial({color:0x3a2010}));
+    pillarL.position.set(x-2.5,.01,z);
+    const pillarR=pillarL.clone();pillarR.position.x=x+2.5;
+    g.add(ring,glow,pillarL,pillarR);
+    scene.add(g);this._bossPortal=g;
+    return g;
+  },
+
+  update(dt,t){
+    this.torches.forEach(torch=>{
+      if(torch.userData.flame)
+        torch.userData.flame.scale.setScalar(.82+Math.sin(t*.009+torch.position.x)*.18);
+    });
+    if(this._runeCircle)
+      this._runeCircle.material.opacity=.2+Math.sin(t*.0015)*.1;
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  PLAYER MESH
+// ════════════════════════════════════════════════════════
+const PlayerMesh = {
+  group:null,
+  bodyMat:null, armorMat:null, headMat:null, hairMat:null,
+  weaponMesh:null,
+
+  build(){
+    if(this.group)scene.remove(this.group);
+    const cls=DATA.classes[STATE.cls];
+    this.group=new THREE.Group();
+    this.bodyMat=new THREE.MeshLambertMaterial({color:cls.bodyColor});
+    this.armorMat=new THREE.MeshLambertMaterial({color:cls.armorColor});
+    this.headMat=new THREE.MeshLambertMaterial({color:hexToColor(STATE.skin)});
+    this.hairMat=new THREE.MeshLambertMaterial({color:hexToColor(STATE.hairColor)});
+
+    const body=new THREE.Mesh(new THREE.BoxGeometry(.55,.92,.4),this.bodyMat);
+    body.position.y=.46;body.castShadow=true;this._body=body;
+
+    const head=new THREE.Mesh(new THREE.BoxGeometry(.48,.48,.48),this.headMat);
+    head.position.y=1.16;head.castShadow=true;
+
+    const hair=new THREE.Mesh(new THREE.BoxGeometry(.5,.16,.5),this.hairMat);
+    hair.position.y=1.38;
+
+    const helmet=new THREE.Mesh(new THREE.CylinderGeometry(.26,.27,.15,8),this.armorMat);
+    helmet.position.y=1.35;
+
+    const cape=new THREE.Mesh(new THREE.BoxGeometry(.62,.55,.06),this.armorMat);
+    cape.position.set(0,.52,-.23);
+
+    // Weapon
+    this.weaponMesh=this._buildWeapon();
+    this.weaponMesh.position.set(.42,.76,0);
+
+    this.group.add(body,head,hair,helmet,cape,this.weaponMesh);
+    scene.add(this.group);
+  },
+
+  _buildWeapon(){
+    const cls=STATE.cls;
+    const g=new THREE.Group();
+    const wmat=new THREE.MeshLambertMaterial({color:0x8a7a6a});
+    if(cls==='berserker'){
+      const h=new THREE.Mesh(new THREE.BoxGeometry(.08,.75,.08),wmat);h.position.y=0;
+      const b=new THREE.Mesh(new THREE.BoxGeometry(.22,.2,.06),wmat);b.position.y=.42;
+      g.add(h,b);
+    }else if(cls==='seidr'){
+      const s=new THREE.Mesh(new THREE.SphereGeometry(.12,8,8),
+        new THREE.MeshBasicMaterial({color:0x8844ff}));
+      s.position.y=.45;
+      const w=new THREE.Mesh(new THREE.CylinderGeometry(.03,.04,.75,5),wmat);
+      g.add(w,s);
+    }else{
+      const b=new THREE.Mesh(new THREE.BoxGeometry(.04,.65,.04),wmat);b.position.y=0;
+      const t=new THREE.Mesh(new THREE.SphereGeometry(.04,4,4),wmat);t.position.y=.34;
+      g.add(b,t);
+    }
+    return g;
+  },
+
+  update(dt,mv,t){
+    if(!this.group)return;
+    if(mv.lengthSq()>.01)
+      this._body.rotation.x=Math.sin(t*.009)*.08;
+    else
+      this._body.rotation.x*=.9;
+    // Weapon bob
+    if(this.weaponMesh)
+      this.weaponMesh.rotation.z=Math.sin(t*.006)*.05;
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  NPC SYSTEM
+// ════════════════════════════════════════════════════════
+const NPCSystem = {
+  npcs:[],
+
+  build(floorNum){
+    this.npcs.forEach(n=>scene.remove(n.mesh));
+    this.npcs=[];
+    const fd=DATA.floors[floorNum];
+    fd.npcs.forEach(nd=>{
+      const mesh=this._makeNPCMesh(nd);
+      mesh.position.set(nd.x,0,nd.z);
+      scene.add(mesh);
+      this.npcs.push({...nd,mesh,dlgIndex:'intro'});
+    });
+  },
+
+  _makeNPCMesh(nd){
+    const g=new THREE.Group();
+    const bm=new THREE.MeshLambertMaterial({color:nd.color||0x8b7355});
+    const body=new THREE.Mesh(new THREE.BoxGeometry(.5,.85,.38),bm);body.position.y=.42;body.castShadow=true;
+    const head=new THREE.Mesh(new THREE.BoxGeometry(.44,.44,.44),
+      new THREE.MeshLambertMaterial({color:0xd4a882}));head.position.y=1.07;
+    // Quest indicator
+    const qi=new THREE.Group();
+    const qSphere=new THREE.Mesh(new THREE.SphereGeometry(.15,6,6),
+      new THREE.MeshBasicMaterial({color:0xffdd00}));qSphere.position.y=1.8;
+    qi.add(qSphere);qi.userData.isQI=true;
+    // Label (sprite-ish — just a light)
+    const npcLight=new THREE.PointLight(0xffdd00,.3,4);npcLight.position.y=2;
+    g.add(body,head,qi,npcLight);
+    g.userData.npcId=nd.id;
+    return g;
+  },
+
+  update(dt,t){
+    this.npcs.forEach(n=>{
+      // Idle bob
+      n.mesh.position.y=Math.sin(t*.002+n.x)*.04;
+      // Quest indicator pulse
+      const qi=n.mesh.children.find(c=>c.userData.isQI);
+      if(qi)qi.rotation.y=t*.002;
+    });
+  },
+
+  getNearby(px,pz,radius=3.5){
+    return this.npcs.find(n=>{
+      const dx=n.mesh.position.x-px, dz=n.mesh.position.z-pz;
+      return Math.sqrt(dx*dx+dz*dz)<radius;
+    })||null;
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  DIALOGUE SYSTEM
+// ════════════════════════════════════════════════════════
+const Dialogue = {
+  active:false, currentNpc:null,
+
+  open(npc){
+    this.active=true;this.currentNpc=npc;
+    this._show(npc.dlgIndex||'intro');
+  },
+
+  _show(nodeId){
+    const npc=this.currentNpc;
+    const dlgData=npc.dialogue.find(d=>d.id===nodeId);
+    if(!dlgData){this.close();return;}
+    npc.dlgIndex=nodeId;
+    document.getElementById('dlg-speaker').textContent=dlgData.speaker;
+    document.getElementById('dlg-text').textContent=dlgData.text;
+    const cc=document.getElementById('dlg-choices');
+    cc.innerHTML='';
+    dlgData.choices.forEach(choice=>{
+      const btn=document.createElement('button');
+      btn.className='dlg-choice';btn.textContent=choice.text;
+      btn.onclick=()=>this._choose(choice);
+      cc.appendChild(btn);
+    });
+    document.getElementById('dialogue').style.display='block';
+  },
+
+  _choose(choice){
+    if(choice.action){
+      const [act,param]=choice.action.split(':');
+      if(act==='giveQuest')Quests.give(param);
+      if(act==='close'){this.close();return;}
+    }
+    if(choice.next==='end'||!choice.next){this.close();return;}
+    if(choice.next==='close'){this.close();return;}
+    this._show(choice.next);
+  },
+
+  close(){
+    this.active=false;this.currentNpc=null;
+    document.getElementById('dialogue').style.display='none';
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  QUEST SYSTEM
+// ════════════════════════════════════════════════════════
+const Quests = {
+  give(qid){
+    if(STATE.quests[qid])return; // already given
+    const qd=DATA.quests[qid];
+    STATE.quests[qid]={
+      status:'active',
+      objectives:qd.objectives.map(o=>({...o,current:0}))
+    };
+    showNotif('📜 New Quest: '+qd.name,'#e8c96a');
+    this.updateTracker();
+    Save.save();
+  },
+
+  onKill(enemyId){
+    Object.entries(STATE.quests).forEach(([qid,qs])=>{
+      if(qs.status!=='active')return;
+      const qd=DATA.quests[qid];
+      qs.objectives.forEach((obj,i)=>{
+        if(obj.type==='kill'&&obj.enemy===enemyId&&obj.current<obj.count){
+          obj.current++;
+          if(obj.current>=obj.count) showNotif('✅ '+qd.name+' objective complete!','#4caf50');
+        }
+      });
+      this._checkComplete(qid,qs);
+    });
+    this.updateTracker();
+  },
+
+  onCollect(itemId){
+    Object.entries(STATE.quests).forEach(([qid,qs])=>{
+      if(qs.status!=='active')return;
+      const qd=DATA.quests[qid];
+      qs.objectives.forEach(obj=>{
+        if(obj.type==='collect'&&obj.item===itemId)
+          obj.current=Math.min(obj.count,Inventory.getCount(itemId));
+      });
+      this._checkComplete(qid,qs);
+    });
+    this.updateTracker();
+  },
+
+  onReach(zone){
+    Object.entries(STATE.quests).forEach(([qid,qs])=>{
+      if(qs.status!=='active')return;
+      qs.objectives.forEach(obj=>{
+        if(obj.type==='reach'&&obj.zone===zone)obj.current=1;
+      });
+      this._checkComplete(qid,qs);
+    });
+    this.updateTracker();
+  },
+
+  _checkComplete(qid,qs){
+    if(qs.status!=='active')return;
+    const allDone=qs.objectives.every(o=>o.current>=o.count);
+    if(allDone){
+      qs.status='complete';
+      const qd=DATA.quests[qid];
+      // Give rewards
+      STATE.xp+=qd.rewards.xp||0;
+      STATE.gold+=qd.rewards.gold||0;
+      (qd.rewards.items||[]).forEach(iid=>Inventory.add(iid,1));
+      showNotif('🎉 Quest Complete: '+qd.name,' +'+qd.rewards.xp+'XP','#e8c96a');
+      showNotif('Quest Complete: '+qd.name,'#e8c96a');
+      Player.checkLevelUp();
+      Save.save();
+    }
+  },
+
+  updateTracker(){
+    const el=document.getElementById('qt-content');
+    const active=Object.entries(STATE.quests).filter(([,qs])=>qs.status==='active');
+    if(!active.length){el.innerHTML='<div class="qt-empty">No active quests</div>';return;}
+    el.innerHTML=active.map(([qid,qs])=>{
+      const qd=DATA.quests[qid];
+      const objs=qs.objectives.map(obj=>
+        `<div class="qt-obj${obj.current>=obj.count?' done':''}">${obj.label} ${obj.current}/${obj.count}</div>`
+      ).join('');
+      return`<div class="qt-quest"><div class="qt-qname">${qd.name}</div><div class="qt-obj">${objs}</div></div>`;
+    }).join('');
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  INVENTORY SYSTEM
+// ════════════════════════════════════════════════════════
+const Inventory = {
+  add(itemId,qty=1){
+    const ex=STATE.inventory.find(i=>i.id===itemId);
+    if(ex)ex.qty+=qty;
+    else STATE.inventory.push({id:itemId,qty});
+    Quests.onCollect(itemId);
+  },
+  remove(itemId,qty=1){
+    const ex=STATE.inventory.find(i=>i.id===itemId);
+    if(!ex)return false;
+    ex.qty-=qty;
+    if(ex.qty<=0)STATE.inventory=STATE.inventory.filter(i=>i.id!==itemId);
+    return true;
+  },
+  getCount(itemId){return(STATE.inventory.find(i=>i.id===itemId)||{qty:0}).qty;},
+  use(itemId){
+    const item=DATA.items[itemId];
+    if(!item)return;
+    if(item.type==='consumable'){
+      if(item.effect?.hp){STATE.hp=Math.min(STATE.maxHp,STATE.hp+item.effect.hp);showNotif('+'+item.effect.hp+' HP recovered','#4caf50');}
+      if(item.effect?.mp){STATE.mp=Math.min(STATE.maxMp,STATE.mp+item.effect.mp);showNotif('+'+item.effect.mp+' MP recovered','#5dade2');}
+      this.remove(itemId,1);
+    }else if(['weapon','armor','accessory'].includes(item.type)){
+      this.equip(itemId);
+    }
+    UI.renderInventory();
+  },
+  equip(itemId){
+    const item=DATA.items[itemId];
+    if(!item)return;
+    const slot=item.type;
+    // Unequip current
+    if(STATE.equipped[slot]){
+      this.add(STATE.equipped[slot],1);
+      const old=DATA.items[STATE.equipped[slot]];
+      if(old?.stats)Object.entries(old.stats).forEach(([k,v])=>STATE[k]-=v);
+    }
+    STATE.equipped[slot]=itemId;
+    this.remove(itemId,1);
+    if(item.stats)Object.entries(item.stats).forEach(([k,v])=>STATE[k]+=v);
+    showNotif('Equipped: '+item.name,'#e8c96a');
+    UI.renderEquipment();
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  PLAYER SYSTEM
+// ════════════════════════════════════════════════════════
+const Player = {
+  checkLevelUp(){
+    while(STATE.xp>=STATE.xpNext){
+      STATE.xp-=STATE.xpNext; STATE.lv++;
+      STATE.xpNext=Math.floor(100*Math.pow(1.33,STATE.lv-1));
+      STATE.maxHp=Math.floor(STATE.maxHp*1.12);
+      STATE.hp=STATE.maxHp;
+      STATE.maxMp=Math.floor(STATE.maxMp*1.10);
+      STATE.mp=STATE.maxMp;
+      STATE.atk=Math.floor(STATE.atk*1.09);
+      document.getElementById('lv-badge').textContent='Lv '+STATE.lv;
+      showNotif('🍃 LEVEL UP! Now Lv.'+STATE.lv,'#e8c96a');
+      Chat.addMsg({name:'🌟 Yggdrasil',msg:STATE.username+' reached level '+STATE.lv+'!',cls:'skald'});
+      Save.save();
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  ENEMY SYSTEM
+// ════════════════════════════════════════════════════════
+const EnemySystem = {
+  enemies:[],
+  spawnPts:[
+    [18,2],[-18,14],[10,24],[-24,-18],[30,30],[-34,22],[14,-28],[34,-14],
+    [-14,34],[24,-34],[-30,-30],[40,8],[-40,-8],[2,40],[2,-40],[44,20],[-44,6],
+  ],
+
+  build(floorNum){
+    this.enemies.forEach(e=>scene.remove(e.mesh));
+    this.enemies=[];
+    const fd=DATA.floors[floorNum];
+    for(let i=0;i<14;i++)this.spawn(fd.enemies[Math.floor(Math.random()*fd.enemies.length)],i);
+  },
+
+  spawn(typeId,spawnIdx){
+    const td=DATA.enemies[typeId];
+    if(!td)return;
+    const sp=this.spawnPts[spawnIdx%this.spawnPts.length];
+    const mesh=this._makeMesh(td);
+    const sx=sp[0]+rnd(-3,3), sz=sp[1]+rnd(-3,3);
+    mesh.position.set(sx,0,sz);scene.add(mesh);
+    this.enemies.push({
+      id:typeId,mesh,type:td,hp:td.hp,maxHp:td.hp,atk:td.atk,spd:td.spd,
+      xp:td.xp,gold:td.gold,state:'idle',atkCd:0,idleT:rnd(.8,2.5),
+      alive:true,aggrR:td.aggr,atkR:td.sz*(td.shp==='wolf'?1.4:1.2),
+      ox:sx,oz:sz,wobble:0,stunT:0,
+      pTgt:new THREE.Vector3(sx+rnd(-8,8),0,sz+rnd(-8,8)),
+    });
+  },
+
+  spawnBoss(typeId){
+    const td=DATA.enemies[typeId];if(!td)return;
+    const mesh=this._makeMesh(td);
+    mesh.position.set(0,0,-48);mesh.scale.setScalar(1.25);
+    scene.add(mesh);
+    const e={id:typeId,mesh,type:td,hp:td.hp,maxHp:td.hp,atk:td.atk,spd:td.spd,
+      xp:td.xp,gold:td.gold,state:'idle',atkCd:0,idleT:1,alive:true,aggrR:20,atkR:4,
+      ox:0,oz:-48,wobble:0,stunT:0,pTgt:new THREE.Vector3(0,0,-48),isBoss:true};
+    this.enemies.push(e);
+    return e;
+  },
+
+  _makeMesh(td){
+    const g=new THREE.Group();
+    const s=td.sz;
+    const mat=new THREE.MeshLambertMaterial({color:td.color});
+    const eyeM=new THREE.MeshBasicMaterial({color:td.boss?0xff0000:0xff4400});
+
+    if(td.shp==='wolf'){
+      const body=new THREE.Mesh(new THREE.BoxGeometry(.7*s,.5*s,1.1*s),mat);body.position.y=.5*s;body.castShadow=true;
+      const head=new THREE.Mesh(new THREE.BoxGeometry(.55*s,.5*s,.55*s),mat);head.position.set(0,.65*s,.55*s);
+      const e1=new THREE.Mesh(new THREE.SphereGeometry(.06,4,4),eyeM);e1.position.set(-.14*s,.7*s,.78*s);
+      const e2=e1.clone();e2.position.x=.14*s;
+      g.add(body,head,e1,e2);
+    }else if(td.shp==='ghost'){
+      const body=new THREE.Mesh(new THREE.CapsuleGeometry?new THREE.CapsuleGeometry(.3*s,.6*s,4,6):new THREE.SphereGeometry(.4*s,8,8),mat);
+      body.position.y=.8*s;body.castShadow=true;body.material.transparent=true;body.material.opacity=.75;
+      const e1=new THREE.Mesh(new THREE.SphereGeometry(.08,4,4),eyeM);e1.position.set(-.1*s,.95*s,.35*s);
+      const e2=e1.clone();e2.position.x=.1*s;
+      g.add(body,e1,e2);
+    }else if(td.shp==='boss'){
+      const body=new THREE.Mesh(new THREE.BoxGeometry(.7*s,1.1*s,.5*s),mat);body.position.y=.55*s;body.castShadow=true;
+      const head=new THREE.Mesh(new THREE.BoxGeometry(.65*s,.65*s,.65*s),mat);head.position.y=1.3*s;
+      for(let i=0;i<2;i++){
+        const horn=new THREE.Mesh(new THREE.ConeGeometry(.08*s,.3*s,4),new THREE.MeshLambertMaterial({color:0x1a0000}));
+        horn.position.set((i===0?-.22:.22)*s,1.65*s,.1*s);horn.rotation.z=(i===0?.4:-.4);g.add(horn);
+      }
+      const e1=new THREE.Mesh(new THREE.SphereGeometry(.1,5,5),eyeM);e1.position.set(-.17*s,1.35*s,.38*s);
+      const e2=e1.clone();e2.position.x=.17*s;
+      g.add(body,head,e1,e2);
+    }else{
+      const body=new THREE.Mesh(new THREE.BoxGeometry(.55*s,.9*s,.38*s),mat);body.position.y=.45*s;body.castShadow=true;
+      const head=new THREE.Mesh(new THREE.BoxGeometry(.44*s,.44*s,.44*s),mat);head.position.y=1.12*s;
+      const e1=new THREE.Mesh(new THREE.SphereGeometry(.055,4,4),eyeM);e1.position.set(-.1*s,.88*s,.26*s);
+      const e2=e1.clone();e2.position.x=.1*s;
+      g.add(body,head,e1,e2);
+    }
+
+    // HP bar
+    const hbar=new THREE.Group();
+    const ht=td.sz*(td.shp==='boss'?1.7:td.shp==='wolf'?.7:1.15)+.5;
+    const bg=new THREE.Mesh(new THREE.PlaneGeometry(1,.1),new THREE.MeshBasicMaterial({color:0x111111,side:THREE.DoubleSide,depthTest:false}));
+    const fill=new THREE.Mesh(new THREE.PlaneGeometry(1,.1),new THREE.MeshBasicMaterial({color:0xe74c3c,side:THREE.DoubleSide,depthTest:false}));
+    fill.position.z=.001;bg.add(fill);hbar.userData.fill=fill;hbar.add(bg);hbar.position.y=ht;
+    g.userData.hpBar=hbar;g.add(hbar);
+    return g;
+  },
+
+  updateHpBar(enemy){
+    const fill=enemy.mesh.userData.hpBar?.userData?.fill;
+    if(!fill)return;
+    const r=Math.max(0,enemy.hp/enemy.maxHp);
+    fill.scale.x=r;fill.position.x=-(1-r)*.5;
+  },
+
+  update(dt,px,pz,t){
+    const POS=PlayerMesh.group?.position;
+    this.enemies.forEach(e=>{
+      if(!e.alive)return;
+      if(e.stunT>0){e.stunT-=dt;return;}
+      const dx=px-e.mesh.position.x, dz=pz-e.mesh.position.z;
+      const dist=Math.sqrt(dx*dx+dz*dz);
+
+      if(e.state==='idle'){
+        e.idleT-=dt;
+        if(e.idleT<=0){e.state='patrol';e.pTgt.set(e.ox+rnd(-10,10),0,e.oz+rnd(-10,10));}
+        if(dist<e.aggrR)e.state='chase';
+      }else if(e.state==='patrol'){
+        const tx=e.pTgt.x-e.mesh.position.x,tz=e.pTgt.z-e.mesh.position.z;
+        const pd=Math.sqrt(tx*tx+tz*tz);
+        if(pd<.8){e.state='idle';e.idleT=rnd(.8,2.5);}
+        else{e.mesh.position.x+=tx/pd*e.spd*.5*dt;e.mesh.position.z+=tz/pd*e.spd*.5*dt;e.mesh.rotation.y=Math.atan2(tx,tz);}
+        if(dist<e.aggrR)e.state='chase';
+      }else if(e.state==='chase'){
+        if(dist<e.atkR)e.state='attack';
+        else if(dist>e.aggrR*2.8){e.state='idle';e.idleT=rnd(.8,2);}
+        else{e.mesh.position.x+=dx/dist*e.spd*dt;e.mesh.position.z+=dz/dist*e.spd*dt;e.mesh.rotation.y=Math.atan2(dx,dz);}
+      }else{
+        if(dist>e.atkR*1.8)e.state='chase';
+        else{
+          e.atkCd-=dt;
+          if(e.atkCd<=0){
+            e.atkCd=1.5+Math.random()*.8;
+            if(STATE.iFrame<=0){
+              const dmg=Math.max(1,Math.floor(e.atk*(0.8+Math.random()*.4))-STATE.def);
+              STATE.hp=Math.max(0,STATE.hp-dmg);
+              UI.floatNum(dmg,'#e74c3c',px+rnd(-1,1),pz+rnd(-1,1));
+              STATE.iFrame=.5;
+              if(STATE.hp<=0){Combat.onPlayerDeath();}
+            }
+          }
+        }
+      }
+
+      e.wobble+=dt*2.5;
+      const bodyChild=e.mesh.children[0];
+      if(bodyChild?.position&&e.type.shp!=='wolf'){
+        const base=.45*e.type.sz;
+        bodyChild.position.y=base+Math.sin(e.wobble)*.045;
+      }
+      if(e.mesh.userData.hpBar)e.mesh.userData.hpBar.lookAt(cam.position);
+    });
+  },
+
+  killEnemy(enemy){
+    enemy.alive=false;scene.remove(enemy.mesh);
+    const goldDrop=Math.floor(rnd(enemy.gold[0],enemy.gold[1]));
+    STATE.gold+=goldDrop;
+    STATE.xp+=enemy.xp;
+    Quests.onKill(enemy.id);
+    // Drops
+    (enemy.type.drops||[]).forEach(drop=>{
+      if(Math.random()<drop.chance)Inventory.add(drop.item,drop.qty||1);
+    });
+    UI.addKillLog('+'+enemy.xp+' XP  +'+goldDrop+'🪙  '+enemy.type.name);
+    Player.checkLevelUp();
+    UI.floatNum(enemy.xp,'#e8c96a',enemy.mesh.position.x,enemy.mesh.position.z,'+');
+    // Respawn
+    setTimeout(()=>{
+      if(this.enemies.filter(e=>e.alive&&!e.isBoss).length<14)
+        this.spawn(enemy.id,Math.floor(Math.random()*this.spawnPts.length));
+    },8000);
+    if(enemy.isBoss){
+      STATE.inBossFight=false;
+      document.getElementById('bossbar').style.display='none';
+      setTimeout(()=>{FloorSystem.onBossDefeated();},1500);
+    }
+  },
+
+  getNearestAlive(px,pz,maxDist=5.5){
+    let best=null,bd=maxDist;
+    this.enemies.forEach(e=>{
+      if(!e.alive)return;
+      const dx=e.mesh.position.x-px,dz=e.mesh.position.z-pz;
+      const d=Math.sqrt(dx*dx+dz*dz);
+      if(d<bd){bd=d;best=e;}
+    });
+    return best;
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  PROJECTILES + PARTICLES
+// ════════════════════════════════════════════════════════
+const FX = {
+  projs:[],parts:[],
+  PMATS:{
+    rune:new THREE.MeshBasicMaterial({color:0x44ff88}),
+    ice:new THREE.MeshBasicMaterial({color:0x88ddff}),
+    arrow:new THREE.MeshBasicMaterial({color:0xd4a844}),
+  },
+  PGEO:new THREE.SphereGeometry(.16,5,5),
+  PCOL:[0xffcc44,0xff8822,0x88ff88,0xffffff],
+
+  fireProj(from,enemy,dmg,clr){
+    const m=new THREE.Mesh(this.PGEO,this.PMATS[clr]||this.PMATS.rune);
+    m.position.copy(from);m.position.y=1;scene.add(m);
+    const dir=new THREE.Vector3().subVectors(enemy.mesh.position,from).normalize();
+    this.projs.push({mesh:m,dir,target:enemy,dmg,spd:20,life:1.8});
+  },
+
+  spawnHit(pos,n=10){
+    for(let i=0;i<n;i++){
+      const m=new THREE.Mesh(this.PGEO,new THREE.MeshBasicMaterial({color:this.PCOL[Math.floor(Math.random()*this.PCOL.length)],transparent:true}));
+      m.position.copy(pos);m.position.y+=.4;scene.add(m);
+      this.parts.push({mesh:m,vx:rnd(-5,5),vy:rnd(2,7),vz:rnd(-5,5),life:.6});
+    }
+  },
+
+  update(dt,t){
+    for(let i=this.projs.length-1;i>=0;i--){
+      const p=this.projs[i];p.life-=dt;
+      if(p.life<=0||!p.target.alive){scene.remove(p.mesh);this.projs.splice(i,1);continue;}
+      p.mesh.position.addScaledVector(p.dir,p.spd*dt);
+      p.mesh.scale.setScalar(.85+Math.sin(t*.025)*.15);
+      const dx=p.mesh.position.x-p.target.mesh.position.x;
+      const dz=p.mesh.position.z-p.target.mesh.position.z;
+      if(Math.sqrt(dx*dx+dz*dz)<.85){
+        Combat.dealDamage(p.target,p.dmg);
+        this.spawnHit(p.mesh.position.clone());
+        scene.remove(p.mesh);this.projs.splice(i,1);
+      }
+    }
+    for(let i=this.parts.length-1;i>=0;i--){
+      const p=this.parts[i];p.life-=dt;
+      if(p.life<=0){scene.remove(p.mesh);this.parts.splice(i,1);continue;}
+      p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;
+      p.vy-=14*dt;p.mesh.material.opacity=p.life/.6;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  COMBAT SYSTEM
+// ════════════════════════════════════════════════════════
+const Combat = {
+  dealDamage(enemy,dmg){
+    if(!enemy||!enemy.alive)return;
+    dmg=Math.max(1,dmg);
+    enemy.hp-=dmg;
+    EnemySystem.updateHpBar(enemy);
+    UI.floatNum(dmg,'#e8e0c8',enemy.mesh.position.x,enemy.mesh.position.z);
+    if(STATE.target===enemy)UI.updateTargetHUD();
+    if(enemy.isBoss)document.getElementById('boss-f').style.width=(Math.max(0,enemy.hp/enemy.maxHp)*100)+'%';
+    if(enemy.hp<=0)EnemySystem.killEnemy(enemy);
+  },
+
+  useSkill(i){
+    if(Dialogue.active)return;
+    const sk=DATA.classes[STATE.cls].skills[i];
+    if(STATE.skillCds[i]>0){showNotif('Skill recharging…','#c9a84c');return;}
+    if(STATE.mp<sk.cost){showNotif('Not enough MP','#5dade2');return;}
+    STATE.mp=Math.max(0,STATE.mp-sk.cost);
+
+    if(sk.heal){
+      STATE.hp=Math.min(STATE.maxHp,STATE.hp+sk.heal);
+      UI.floatNum(sk.heal,'#4caf50',PlayerMesh.group.position.x,PlayerMesh.group.position.z,'+');
+      showNotif('🍃 '+sk.name+' +'+sk.heal+' HP','#4caf50');
+    }else if(sk.aoe){
+      let hits=0;
+      EnemySystem.enemies.forEach(e=>{
+        if(!e.alive)return;
+        const dx=e.mesh.position.x-PlayerMesh.group.position.x;
+        const dz=e.mesh.position.z-PlayerMesh.group.position.z;
+        if(Math.sqrt(dx*dx+dz*dz)<sk.aoeR){this.dealDamage(e,Math.floor(STATE.atk*sk.dmg*(0.8+Math.random()*.4)));hits++;}
+      });
+      FX.spawnHit(PlayerMesh.group.position.clone(),22);
+      showNotif('⚡ '+sk.name+' — '+hits+' hit','#c9a84c');
+    }else if(sk.proj){
+      if(!STATE.target||!STATE.target.alive){showNotif('No target!','#e74c3c');return;}
+      const count=sk.multi||1;
+      for(let m=0;m<count;m++)
+        setTimeout(()=>{if(STATE.target?.alive)FX.fireProj(PlayerMesh.group.position.clone(),STATE.target,Math.floor(STATE.atk*sk.dmg*(0.85+Math.random()*.3)),sk.clr||'rune');},m*160);
+      showNotif('✦ '+sk.name,'#c9a84c');
+    }else{
+      if(!STATE.target||!STATE.target.alive){showNotif('No target!','#e74c3c');return;}
+      this.dealDamage(STATE.target,Math.floor(STATE.atk*sk.dmg*(0.85+Math.random()*.3)));
+      if(sk.stun)STATE.target.stunT=sk.stun;
+      showNotif('🪓 '+sk.name,'#c9a84c');
+    }
+    STATE.skillCds[i]=sk.cd;STATE.skillMaxCds=STATE.skillMaxCds||[0,0,0,0];STATE.skillMaxCds[i]=sk.cd;
+    document.getElementById('sk'+i).classList.add('oncd');
+  },
+
+  onPlayerDeath(){
+    STATE.hp=Math.floor(STATE.maxHp*.4);
+    PlayerMesh.group.position.set(0,0,0);
+    STATE.target=null;
+    document.getElementById('thud').style.display='none';
+    showNotif('💀 You fell… Returned to the World Tree','#e74c3c');
+    Chat.addMsg({name:'🌟 Yggdrasil',msg:STATE.username+' was defeated and returned to the starting point.',cls:'skald'});
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  FLOOR SYSTEM
+// ════════════════════════════════════════════════════════
+const FloorSystem = {
+  bossEnemy:null,
+
+  async goToFloor(floorNum){
+    const fd=DATA.floors[floorNum];
+    if(!fd)return;
+
+    // Transition screen
+    document.getElementById('trans-floor').textContent='FLOOR '+floorNum;
+    document.getElementById('trans-name').textContent=fd.name;
+    document.getElementById('trans-desc').textContent=fd.story;
+    showScreen('transition');
+    const prog=document.getElementById('trans-prog');
+    prog.style.width='0%';
+    setTimeout(()=>prog.style.width='100%',100);
+    await sleep(3000);
+
+    // Build world
+    STATE.floor=floorNum;
+    World.build(floorNum);
+    EnemySystem.build(floorNum);
+    NPCSystem.build(floorNum);
+
+    // Reset player position
+    PlayerMesh.group.position.set(0,0,0);
+    STATE.target=null;
+    STATE.inBossFight=false;
+    document.getElementById('thud').style.display='none';
+    document.getElementById('bossbar').style.display='none';
+
+    // Update floor UI
+    document.getElementById('floor-num').textContent=floorNum;
+    document.getElementById('floor-nm').textContent=fd.name;
+    document.getElementById('mm-lbl').textContent=fd.mmLabel;
+
+    // Give floor quests if not given
+    fd.quests.forEach(qid=>{if(!STATE.quests[qid]){}});
+
+    showScreen('game');
+    Save.save();
+  },
+
+  checkBossZone(px,pz){
+    if(STATE.inBossFight)return;
+    if(pz<-40&&Math.abs(px)<8){
+      STATE.inBossFight=true;
+      Quests.onReach('bossArena');
+      const fd=DATA.floors[STATE.floor];
+      this.startBossFight(fd.boss);
+    }
+  },
+
+  async startBossFight(bossId){
+    const bd=DATA.enemies[bossId];
+    // Boss intro
+    document.getElementById('boss-emoji').textContent=bd.emoji||'💀';
+    document.getElementById('boss-intro-name').textContent=bd.name.toUpperCase();
+    showScreen('bossIntro');
+    await sleep(2500);
+    showScreen('game');
+
+    // Spawn boss
+    this.bossEnemy=EnemySystem.spawnBoss(bossId);
+    document.getElementById('boss-nm').textContent='⚠ '+bd.name.toUpperCase();
+    document.getElementById('boss-f').style.width='100%';
+    document.getElementById('bossbar').style.display='block';
+    showNotif('☠ '+bd.name+' has appeared!','#e74c3c');
+    Chat.addMsg({name:'⚠ Yggdrasil',msg:'A powerful boss emerges — '+bd.name+'!',cls:'berserker'});
+  },
+
+  onBossDefeated(){
+    this.bossEnemy=null;
+    const nextFloor=STATE.floor+1;
+    showNotif('🏆 Floor '+STATE.floor+' CLEARED!','#e8c96a');
+    STATE.completedFloors.push(STATE.floor);
+    Chat.addMsg({name:'🌟 Yggdrasil',msg:STATE.username+' cleared Floor '+STATE.floor+'!',cls:'skald'});
+    if(DATA.floors[nextFloor]){
+      setTimeout(()=>this.goToFloor(nextFloor),3000);
+    }else{
+      showNotif('🎉 You have conquered all current floors! More coming soon.','#e8c96a');
+    }
+    Save.save();
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  UI SYSTEM
+// ════════════════════════════════════════════════════════
+const UI = {
+  updateHUD(){
+    document.getElementById('hp-f').style.width=(STATE.hp/STATE.maxHp*100)+'%';
+    document.getElementById('hp-txt').textContent=Math.ceil(STATE.hp)+'/'+STATE.maxHp;
+    document.getElementById('mp-f').style.width=(STATE.mp/STATE.maxMp*100)+'%';
+    document.getElementById('mp-txt').textContent=Math.ceil(STATE.mp)+'/'+STATE.maxMp;
+    document.getElementById('xp-f').style.width=(STATE.xp/STATE.xpNext*100)+'%';
+    document.getElementById('xp-txt').textContent=STATE.xp+'/'+STATE.xpNext;
+    document.getElementById('gold-txt').textContent=STATE.gold;
+  },
+
+  updateTargetHUD(){
+    if(!STATE.target||!STATE.target.alive){document.getElementById('thud').style.display='none';return;}
+    const e=STATE.target;
+    document.getElementById('t-name').textContent=(e.isBoss?'⚠ BOSS: ':'')+e.type.name;
+    document.getElementById('t-hp-f').style.width=(Math.max(0,e.hp/e.maxHp)*100)+'%';
+  },
+
+  floatNum(val,clr,wx,wz,prefix=''){
+    // Project world pos to screen
+    const pos=new THREE.Vector3(wx,1.2,wz);
+    pos.project(cam);
+    const sx=(pos.x+1)/2*innerWidth, sy=(-pos.y+1)/2*innerHeight;
+    const d=document.createElement('div');d.className='dn';
+    d.style.cssText=`color:${clr};font-size:${prefix?20:14+Math.min(val/25,10)}px;left:${sx}px;top:${sy}px`;
+    d.textContent=prefix+val;
+    document.getElementById('ui').appendChild(d);
+    setTimeout(()=>d.remove(),1000);
+  },
+
+  addKillLog(txt){
+    const kl=document.getElementById('killlog');
+    const d=document.createElement('div');d.className='kl';d.textContent=txt;
+    kl.appendChild(d);setTimeout(()=>d.remove(),4000);
+    while(kl.children.length>4)kl.removeChild(kl.firstChild);
+  },
+
+  renderInventory(){
+    const grid=document.getElementById('inv-grid');
+    grid.innerHTML='';
+    STATE.inventory.forEach(entry=>{
+      const item=DATA.items[entry.id];if(!item)return;
+      const d=document.createElement('div');
+      d.className='inv-item rarity-'+(item.rarity||'common');
+      d.innerHTML=`<div class="inv-icon">${item.icon}</div><div class="inv-name">${item.name}</div>${entry.qty>1?`<div class="inv-count">x${entry.qty}</div>`:''}`;
+      d.onclick=()=>Inventory.use(entry.id);
+      d.title=item.desc||item.name;
+      grid.appendChild(d);
+    });
+    this.renderEquipment();
+  },
+
+  renderEquipment(){
+    ['weapon','armor','accessory'].forEach(slot=>{
+      const iid=STATE.equipped[slot];
+      const item=iid?DATA.items[iid]:null;
+      document.getElementById('eq-'+slot).textContent=item?item.icon:'⬜';
+      document.getElementById('eq-'+slot+'-name').textContent=item?item.name:'Empty';
+    });
+  },
+
+  renderQuestLog(){
+    const list=document.getElementById('quest-list');
+    list.innerHTML='';
+    Object.entries(STATE.quests).forEach(([qid,qs])=>{
+      const qd=DATA.quests[qid];if(!qd)return;
+      const li=document.createElement('li');li.className='quest-item';
+      const statusLabel=qs.status==='complete'?'<span class="quest-status qs-complete">COMPLETE</span>':'<span class="quest-status qs-active">ACTIVE</span>';
+      const objs=qs.objectives.map(o=>`<li class="quest-obj${o.current>=o.count?' done':''}">${o.label}: ${o.current}/${o.count}</li>`).join('');
+      const rews=[];
+      if(qd.rewards.xp)rews.push('+'+qd.rewards.xp+' XP');
+      if(qd.rewards.gold)rews.push('+'+qd.rewards.gold+'🪙');
+      (qd.rewards.items||[]).forEach(i=>rews.push(DATA.items[i]?.name||i));
+      li.innerHTML=`${statusLabel}<div class="quest-name">${qd.name}</div><div class="quest-desc">${qd.desc}</div><ul class="quest-obj-list">${objs}</ul><div class="quest-rewards"><div class="quest-rew-label">REWARDS</div><div class="quest-rew-items">${rews.join('  ·  ')}</div></div>`;
+      list.appendChild(li);
+    });
+    if(!list.children.length)list.innerHTML='<li style="color:rgba(232,224,200,.3);font-style:italic;padding:12px;font-size:12px">No quests yet. Talk to NPCs marked with ✦</li>';
+  },
+
+  toggleInventory(){
+    const p=document.getElementById('inv-panel');
+    if(p.classList.contains('open')){p.classList.remove('open');}
+    else{this.renderInventory();p.classList.add('open');}
+  },
+
+  toggleQuestLog(){
+    const p=document.getElementById('quest-panel');
+    if(p.classList.contains('open')){p.classList.remove('open');}
+    else{this.renderQuestLog();p.classList.add('open');}
+  },
+
+  drawMinimap(px,pz){
+    const c=document.getElementById('mm-c');
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#0d1e0a';ctx.fillRect(0,0,90,90);
+    const sc=90/180, cx=45,cy=45;
+    EnemySystem.enemies.forEach(e=>{
+      if(!e.alive)return;
+      const ex=cx+(e.mesh.position.x-px)*sc, ez=cy+(e.mesh.position.z-pz)*sc;
+      if(ex<0||ex>90||ez<0||ez>90)return;
+      ctx.fillStyle=e.isBoss?'#ff44ff':'#e74c3c';
+      ctx.beginPath();ctx.arc(ex,ez,e.isBoss?4:2.5,0,Math.PI*2);ctx.fill();
+    });
+    NPCSystem.npcs.forEach(n=>{
+      const nx=cx+(n.mesh.position.x-px)*sc, nz=cy+(n.mesh.position.z-pz)*sc;
+      if(nx<0||nx>90||nz<0||nz>90)return;
+      ctx.fillStyle='#ffdd00';ctx.beginPath();ctx.arc(nx,nz,3,0,Math.PI*2);ctx.fill();
+    });
+    // Boss portal
+    const bpx=cx+(0-px)*sc, bpz=cy+(-45-pz)*sc;
+    if(bpx>=0&&bpx<=90&&bpz>=0&&bpz<=90){
+      ctx.fillStyle='#ff6600';ctx.beginPath();ctx.arc(bpx,bpz,4,0,Math.PI*2);ctx.fill();
+    }
+    // Player
+    ctx.fillStyle='#e8c96a';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(232,201,106,.5)';ctx.lineWidth=1.5;ctx.stroke();
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  INPUT SYSTEM
+// ════════════════════════════════════════════════════════
+const keys={};
+window.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  keys[e.code]=true;
+  if(!gameStarted)return;
+  const m={KeyZ:0,KeyX:1,KeyC:2,KeyV:3};
+  if(e.code in m)Combat.useSkill(m[e.code]);
+  if(e.code==='KeyF'||e.code==='Space'){
+    if(Dialogue.active)return;
+    if(STATE.nearNpc)Dialogue.open(STATE.nearNpc);
+  }
+  if(e.code==='Escape'){Dialogue.close();document.getElementById('inv-panel').classList.remove('open');document.getElementById('quest-panel').classList.remove('open');}
+  if(e.code==='KeyI')UI.toggleInventory();
+  if(e.code==='KeyQ')UI.toggleQuestLog();
+});
+window.addEventListener('keyup',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=false;});
+
+// Skill buttons
+for(let i=0;i<4;i++){
+  const b=document.getElementById('sk'+i);
+  b.addEventListener('click',()=>Combat.useSkill(i));
+  b.addEventListener('touchstart',e=>{e.stopPropagation();Combat.useSkill(i);},{passive:true});
+}
+
+// Joystick
+const jzone=document.getElementById('jzone');
+const jthumb=document.getElementById('jthumb');
+const joy={active:false,dx:0,dy:0,cx:54,cy:54};const JR=32;
+jzone.addEventListener('touchstart',e=>{e.preventDefault();joy.active=true;const r=jzone.getBoundingClientRect();joy.cx=r.left+54;joy.cy=r.top+54;},{passive:false});
+jzone.addEventListener('touchmove',e=>{e.preventDefault();if(!joy.active)return;const t2=e.touches[0];let dx=t2.clientX-joy.cx,dy=t2.clientY-joy.cy;const d=Math.sqrt(dx*dx+dy*dy);if(d>JR){dx*=JR/d;dy*=JR/d;}joy.dx=dx/JR;joy.dy=dy/JR;jthumb.style.left=(34+dx)+'px';jthumb.style.top=(34+dy)+'px';},{passive:false});
+const resetJoy=()=>{joy.active=false;joy.dx=0;joy.dy=0;jthumb.style.left='34px';jthumb.style.top='34px';};
+jzone.addEventListener('touchend',resetJoy);jzone.addEventListener('touchcancel',resetJoy);
+
+// Camera
+const CAM={yaw:0,pitch:.52,tyaw:0,tpitch:.52,dist:12};
+let camTId=null,lCX=0,lCY=0,mDown=false,lMX=0,lMY=0;
+window.addEventListener('touchstart',e=>{for(const t2 of e.touches)if(t2.clientX>innerWidth*.36&&!camTId){camTId=t2.identifier;lCX=t2.clientX;lCY=t2.clientY;}});
+window.addEventListener('touchmove',e=>{e.preventDefault();for(const t2 of e.changedTouches)if(t2.identifier===camTId){CAM.tyaw-=(t2.clientX-lCX)*.006;CAM.tpitch=Math.max(.1,Math.min(1.1,CAM.tpitch+(t2.clientY-lCY)*.005));lCX=t2.clientX;lCY=t2.clientY;}},{passive:false});
+window.addEventListener('touchend',e=>{for(const t2 of e.changedTouches)if(t2.identifier===camTId)camTId=null;});
+canvas.addEventListener('mousedown',e=>{if(e.button===2||e.button===0){mDown=true;lMX=e.clientX;lMY=e.clientY;}});
+window.addEventListener('mouseup',()=>mDown=false);
+window.addEventListener('mousemove',e=>{if(!mDown)return;CAM.tyaw-=(e.clientX-lMX)*.006;CAM.tpitch=Math.max(.1,Math.min(1.1,CAM.tpitch+(e.clientY-lMY)*.005));lMX=e.clientX;lMY=e.clientY;});
+window.addEventListener('wheel',e=>{CAM.dist=Math.max(4,Math.min(22,CAM.dist+e.deltaY*.018));},{passive:true});
+window.addEventListener('contextmenu',e=>e.preventDefault());
+
+// ════════════════════════════════════════════════════════
+//  MAIN GAME LOOP
+// ════════════════════════════════════════════════════════
+let gameStarted=false, lastT=0;
+
+const Game = {
+  init(){
+    document.getElementById('hud-name').textContent=STATE.username;
+    document.getElementById('lv-badge').textContent='Lv '+STATE.lv;
+    document.getElementById('ui').classList.remove('hidden');
+    // Update skill icons
+    const skills=DATA.classes[STATE.cls].skills;
+    skills.forEach((sk,i)=>{document.getElementById('ski'+i).textContent=sk.icon;});
+    // Build player
+    PlayerMesh.build();
+    // Chat init
+    Chat.listenWorld();
+    Chat.initNPCChat();
+    // Auto-save
+    Save.autoSave();
+    // Go to floor 1
+    if(!STATE.completedFloors.includes(1)||!STATE.floor)STATE.floor=1;
+    FloorSystem.goToFloor(STATE.floor);
+    gameStarted=true;
+    // Register service worker
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('sw.js').then(()=>console.log('SW registered')).catch(()=>{});
+    }
+  }
+};
+
+function loop(t){
+  const dt=Math.min((t-lastT)/1000,.05);lastT=t;
+
+  if(gameStarted&&PlayerMesh.group){
+    const pg=PlayerMesh.group;
+    // Movement
+    const fwd=new THREE.Vector3(-Math.sin(CAM.yaw),0,-Math.cos(CAM.yaw));
+    const rgt=new THREE.Vector3(Math.cos(CAM.yaw),0,-Math.sin(CAM.yaw));
+    const mv=new THREE.Vector3();
+    if(keys['KeyW']||keys['ArrowUp'])mv.addScaledVector(fwd,1);
+    if(keys['KeyS']||keys['ArrowDown'])mv.addScaledVector(fwd,-1);
+    if(keys['KeyA']||keys['ArrowLeft'])mv.addScaledVector(rgt,-1);
+    if(keys['KeyD']||keys['ArrowRight'])mv.addScaledVector(rgt,1);
+    if(joy.active&&(Math.abs(joy.dx)>.08||Math.abs(joy.dy)>.08)){mv.addScaledVector(fwd,-joy.dy);mv.addScaledVector(rgt,joy.dx);}
+    if(mv.lengthSq()>.01){
+      mv.normalize();
+      let nx=pg.position.x+mv.x*STATE.spd*dt, nz=pg.position.z+mv.z*STATE.spd*dt;
+      nx=Math.max(-92,Math.min(92,nx));nz=Math.max(-92,Math.min(92,nz));
+      let blocked=false;
+      for(const ob of World.colObs){const dx=nx-ob.x,dz=nz-ob.z;if(dx*dx+dz*dz<(ob.r+.45)*(ob.r+.45)){blocked=true;break;}}
+      if(!blocked){pg.position.x=nx;pg.position.z=nz;}
+      pg.rotation.y=Math.atan2(mv.x,mv.z);
+    }
+
+    // Camera
+    CAM.yaw+=(CAM.tyaw-CAM.yaw)*.13;CAM.pitch+=(CAM.tpitch-CAM.pitch)*.13;
+    const focus=pg.position.clone().add(new THREE.Vector3(0,1.5,0));
+    cam.position.set(focus.x+Math.sin(CAM.yaw)*Math.cos(CAM.pitch)*CAM.dist,
+      focus.y+Math.sin(CAM.pitch)*CAM.dist,
+      focus.z+Math.cos(CAM.yaw)*Math.cos(CAM.pitch)*CAM.dist);
+    cam.lookAt(focus);
+
+    // Regen
+    STATE.hp=Math.min(STATE.maxHp,STATE.hp+2*dt);
+    STATE.mp=Math.min(STATE.maxMp,STATE.mp+5*dt);
+    if(STATE.iFrame>0)STATE.iFrame-=dt;
+
+    // Auto-target
+    if(!STATE.target||!STATE.target.alive){
+      const nb=EnemySystem.getNearestAlive(pg.position.x,pg.position.z);
+      if(nb){STATE.target=nb;document.getElementById('thud').style.display='block';UI.updateTargetHUD();}
+      else{STATE.target=null;document.getElementById('thud').style.display='none';}
+    }
+
+    // Auto melee
+    if(STATE.atkCd>0)STATE.atkCd-=dt;
+    if(STATE.target&&STATE.target.alive&&STATE.atkCd<=0){
+      const dx=STATE.target.mesh.position.x-pg.position.x,dz=STATE.target.mesh.position.z-pg.position.z;
+      if(Math.sqrt(dx*dx+dz*dz)<3.2){
+        Combat.dealDamage(STATE.target,Math.floor(STATE.atk*(0.85+Math.random()*.3)));
+        FX.spawnHit(STATE.target.mesh.position.clone());
+        STATE.atkCd=1.0;
+      }
+    }
+
+    // Skill cooldowns
+    STATE.skillCds.forEach((cd,i)=>{
+      if(cd<=0)return;
+      STATE.skillCds[i]-=dt;
+      const r=Math.ceil(STATE.skillCds[i]);
+      document.getElementById('cd'+i).textContent=r>0?r:'';
+      if(STATE.skillCds[i]<=0){STATE.skillCds[i]=0;document.getElementById('sk'+i).classList.remove('oncd');document.getElementById('cd'+i).textContent='';}
+    });
+
+    // NPC nearby check
+    const nearNpc=NPCSystem.getNearby(pg.position.x,pg.position.z);
+    STATE.nearNpc=nearNpc;
+    document.getElementById('interact-hint').style.display=nearNpc?'block':'none';
+
+    // Boss zone check
+    FloorSystem.checkBossZone(pg.position.x,pg.position.z);
+
+    // Update systems
+    World.update(dt,t);
+    EnemySystem.update(dt,pg.position.x,pg.position.z,t);
+    NPCSystem.update(dt,t);
+    FX.update(dt,t);
+    PlayerMesh.update(dt,mv,t);
+    UI.updateHUD();
+    UI.drawMinimap(pg.position.x,pg.position.z);
+  }
+
+  renderer.render(scene,cam);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(loop);});
+
+// ════════════════════════════════════════════════════════
+//  UTILITY
+// ════════════════════════════════════════════════════════
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('ui').classList.add('hidden');
+  if(name==='auth')document.getElementById('s-auth').classList.remove('hidden');
+  else if(name==='create'){document.getElementById('s-create').classList.remove('hidden');CharCreate.render();}
+  else if(name==='transition')document.getElementById('s-transition').classList.remove('hidden');
+  else if(name==='bossIntro')document.getElementById('s-boss').classList.remove('hidden');
+  else if(name==='game'){document.getElementById('ui').classList.remove('hidden');}
+}
+
+function showNotif(txt,clr='#e8e0c8'){
+  const n=document.getElementById('notif');
+  n.textContent=txt;n.style.color=clr;n.style.opacity='1';
+  clearTimeout(showNotif._t);
+  showNotif._t=setTimeout(()=>n.style.opacity='0',2600);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// Start
+showScreen('auth');
+</script>
+</body>
+</html>
