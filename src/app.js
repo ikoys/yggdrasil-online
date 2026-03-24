@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    Yggdrasil Online — app.js
    ============================================================ */
 
@@ -25,6 +25,35 @@ try {
 } catch (e) {
   console.error('[YGG] Firebase init failed:', e);
 }
+// ── Fullscreen + Landscape lock ──────────────────────────────
+(function () {
+  function goFullscreen() {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (req) req.call(el).catch(() => {});
+  }
+
+  function lockLandscape() {
+    const so = screen.orientation || screen.msOrientation;
+    if (so && so.lock) {
+      so.lock('landscape').catch(() => {});
+    } else if (screen.lockOrientation) {
+      screen.lockOrientation('landscape');
+    }
+  }
+
+  // Browsers require a user gesture before allowing fullscreen + orientation lock.
+  // Attach to the first tap/click anywhere on the page.
+  function onFirstInteraction() {
+    goFullscreen();
+    lockLandscape();
+    document.removeEventListener('click',      onFirstInteraction);
+    document.removeEventListener('touchstart', onFirstInteraction);
+  }
+
+  document.addEventListener('click',      onFirstInteraction, { once: true });
+  document.addEventListener('touchstart', onFirstInteraction, { once: true });
+})();
 
 // ── Auth ──────────────────────────────────────────────────────
 const Auth = {

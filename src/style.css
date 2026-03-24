@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap');
 
 :root {
   --gold:      #ffd24b;
@@ -225,3 +225,26 @@ body {
   .cc-color { width: 30px; height: 30px; }
   .cc-btn   { padding: 10px 6px; }
 }
+  /* Portrait overlay — shown when device is held upright */
+  #rotate-prompt {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: #060d04;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    color: #ffd24b;
+    font-family: 'Cinzel', Georgia, serif;
+    text-align: center;
+    padding: 24px;
+  }
+  #rotate-prompt .rp-icon { font-size: 56px; animation: spin90 1.2s ease-in-out infinite alternate; }
+  #rotate-prompt .rp-msg  { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #afa284; }
+  @keyframes spin90 {
+    from { transform: rotate(0deg);   }
+    to   { transform: rotate(90deg);  }
+  }
+  @media (orientation: portrait) {
+    #rotate-prompt { display: flex; }
+    body > *:not(#rotate-prompt) { display: none !important; }
+  }
