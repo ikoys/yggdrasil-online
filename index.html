@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -6,31 +6,6 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<style>
-  /* Portrait overlay — shown when device is held upright */
-  #rotate-prompt {
-    display: none;
-    position: fixed; inset: 0; z-index: 9999;
-    background: #060d04;
-    flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 16px;
-    color: #ffd24b;
-    font-family: 'Cinzel', Georgia, serif;
-    text-align: center;
-    padding: 24px;
-  }
-  #rotate-prompt .rp-icon { font-size: 56px; animation: spin90 1.2s ease-in-out infinite alternate; }
-  #rotate-prompt .rp-msg  { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #afa284; }
-  @keyframes spin90 {
-    from { transform: rotate(0deg);   }
-    to   { transform: rotate(90deg);  }
-  }
-  @media (orientation: portrait) {
-    #rotate-prompt { display: flex; }
-    body > *:not(#rotate-prompt) { display: none !important; }
-  }
-</style>
 <title>Yggdrasil Online</title>
 <link rel="stylesheet" href="src/style.css" />
 </head>
@@ -110,35 +85,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script src="src/app.js"></script>
 <script>
-// ── Fullscreen + Landscape lock ──────────────────────────────
-(function () {
-  function goFullscreen() {
-    const el = document.documentElement;
-    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
-    if (req) req.call(el).catch(() => {});
-  }
 
-  function lockLandscape() {
-    const so = screen.orientation || screen.msOrientation;
-    if (so && so.lock) {
-      so.lock('landscape').catch(() => {});
-    } else if (screen.lockOrientation) {
-      screen.lockOrientation('landscape');
-    }
-  }
-
-  // Browsers require a user gesture before allowing fullscreen + orientation lock.
-  // Attach to the first tap/click anywhere on the page.
-  function onFirstInteraction() {
-    goFullscreen();
-    lockLandscape();
-    document.removeEventListener('click',      onFirstInteraction);
-    document.removeEventListener('touchstart', onFirstInteraction);
-  }
-
-  document.addEventListener('click',      onFirstInteraction, { once: true });
-  document.addEventListener('touchstart', onFirstInteraction, { once: true });
-})();
 </script>
 </body>
 </html>
