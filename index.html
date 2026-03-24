@@ -1,28 +1,82 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Yggdrasil Online - Landing</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Yggdrasil Online</title>
 <link rel="stylesheet" href="src/style.css" />
 </head>
 <body>
+
+<!-- LANDING ---------------------------------------------------------------->
 <div id="s-auth">
   <span class="a-leaf">🍃</span>
   <span class="a-ygg">YGG</span>
-  <div class="a-sub">YGGDRASIL ONLINE · AINCRAD</div>
+  <div class="a-sub">Yggdrasil Online</div>
   <div class="a-box">
-    <div class="a-ttl">⟨ ENTER THE WORLD ⟩</div>
-    <button class="btn-g" onclick="Auth.google()">Continue with Google</button>
-    <div class="a-note">Google saves across devices.</div>
+    <div class="a-ttl">⟨ Enter the World ⟩</div>
+    <button class="btn-g"  onclick="CharCreate.show('google')">Continue with Google</button>
+    <div class="a-note">Progress saved across all devices.</div>
+    <hr class="a-divider" />
     <button class="btn-gs" onclick="Auth.guest()">⟩ Play as Guest ⟨</button>
-    <div class="a-note">Guest saves locally only.</div>
+    <div class="a-note">Guest progress saved locally only.</div>
   </div>
 </div>
+
+<!-- CHARACTER CREATION ----------------------------------------------------->
+<div class="screen hidden" id="s-create">
+  <div class="cc-wrap">
+
+    <!-- LEFT: 3D model viewport -->
+    <div class="cc-viewport">
+      <canvas id="model-canvas"></canvas>
+      <div class="cc-class-badge">⚔ SWORDSMAN</div>
+    </div>
+
+    <!-- RIGHT: controls panel -->
+    <div class="cc-panel">
+      <div class="cc-ttl">Create Character</div>
+
+      <div class="cc-field">
+        <label class="cc-lbl" for="char-name">Character Name</label>
+        <input type="text" id="char-name" class="cc-inp"
+               placeholder="Enter your name…" maxlength="20"
+               autocomplete="off" autocorrect="off" spellcheck="false" />
+      </div>
+
+      <div class="cc-field">
+        <label class="cc-lbl">Skin Tone</label>
+        <div class="cc-colors" id="color-picker">
+          <div class="cc-color selected" style="background:#fff0e6" data-color="#fff0e6" onclick="CharCreate.selectColor(this)"></div>
+          <div class="cc-color"          style="background:#f4d4b0" data-color="#f4d4b0" onclick="CharCreate.selectColor(this)"></div>
+          <div class="cc-color"          style="background:#d4a574" data-color="#d4a574" onclick="CharCreate.selectColor(this)"></div>
+          <div class="cc-color"          style="background:#b8860b" data-color="#b8860b" onclick="CharCreate.selectColor(this)"></div>
+          <div class="cc-color"          style="background:#8b6914" data-color="#8b6914" onclick="CharCreate.selectColor(this)"></div>
+        </div>
+      </div>
+
+      <div class="cc-spacer"></div>
+
+      <div class="cc-btns">
+        <button class="cc-btn cc-back"   onclick="Auth.backToLogin()">← Back</button>
+        <button class="cc-btn cc-create" onclick="CharCreate.submit()">Create</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>window.THREE = THREE;</script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script src="src/app.js"></script>
 </body>
 </html>
