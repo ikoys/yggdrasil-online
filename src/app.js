@@ -640,7 +640,7 @@ this._town.traverse(child => {
         this._worldScale = baseScale; // kept for reference / legacy
 
         this._char.scale.setScalar(finalScale);
-        this._char.position.y = 10; // high enough to fall down onto terrain via raycast // feet at y = 0
+        this._char.position.set(11, 11, 11); // x, z = where on the map, y=10 so it drops onto terrain
 
         // Apply chosen skin colour
         const skinColor = new THREE.Color(this._charData?.color || '#fff0e6');
@@ -667,7 +667,7 @@ this._town.traverse(child => {
         }
 
         this._updateCamera(true);
-        console.log('[YGG] Character loaded ✓  scale:', finalScale.toFixed(4));
+        console.log('[YGG] Character loaded ✓  scale:');
         this._showLoadStep('char');
         if (onDone) onDone();
       },
@@ -926,13 +926,20 @@ camZone.addEventListener('touchmove', e => {
       while (diff < -Math.PI) diff += Math.PI * 2;
       this._char.rotation.y += diff * Math.min(1, 14 * dt);
 
-      // ── Camera auto-follow removed ──────────────────────────────
-      // _camYaw is set only by mouse/touch drag. Movement is always
-      // relative to the camera, so there is nothing to sync back.
+      // ── Camera auto-follow ──────────────────────────────────────
+      // When the player is NOT manually dragging the camera, ease
+      // _camYaw toward the character's facing so controls always feel
+      // relative to "where I'm going" rather than the world axis.
+      if (!this._mouseDown) {
+        let camDiff = this._char.rotation.y - this._camYaw;
+        while (camDiff >  Math.PI) camDiff -= Math.PI * 2;
+        while (camDiff < -Math.PI) camDiff += Math.PI * 2;
+        this._camYaw += camDiff * Math.min(1, 3.5 * dt);
+      }
     }
 
     // ── Building collision ──────────────────────────────────────
-    this._collide();
+    ;
 
     // ── Map boundary clamp ──────────────────────────────────────
     // Hard-stop at MAP_RADIUS so the player can't walk off into open sea.
