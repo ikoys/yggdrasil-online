@@ -640,7 +640,7 @@ this._town.traverse(child => {
         this._worldScale = baseScale; // kept for reference / legacy
 
         this._char.scale.setScalar(finalScale);
-        this._char.position.y = 10; // high enough to fall down onto terrain via raycast // feet at y = 0
+        this._char.position.y = 20; // high enough to fall down onto terrain via raycast // feet at y = 0
 
         // Apply chosen skin colour
         const skinColor = new THREE.Color(this._charData?.color || '#fff0e6');
