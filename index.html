@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -75,6 +75,58 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════
+     GAME WORLD
+════════════════════════════════════════════════════════════════════════ -->
+<div id="s-game">
+
+  <!-- Main 3D canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Loading overlay (shown while town + character GLBs load) -->
+  <div id="loading-overlay">
+    <div class="lo-inner">
+      <div class="lo-leaf">🍃</div>
+      <div class="lo-title">Yggdrasil Online</div>
+      <div class="lo-msg">Entering the Nine Realms…</div>
+      <div class="lo-bar"><div class="lo-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- HUD — top-left character info -->
+  <div class="hud-topleft">
+    <div class="hud-nameplate">
+      <span class="hud-charname" id="hud-name">HERO</span>
+      <span class="hud-charclass">⚔ SWORDSMAN</span>
+    </div>
+    <div class="hud-hprow">
+      <span class="hud-hplabel">HP</span>
+      <div class="hud-healthbar">
+        <div class="hud-health-fill" style="width:100%"></div>
+      </div>
+      <span class="hud-hpnum">100</span>
+    </div>
+  </div>
+
+  <!-- Controls hint — fades out after first keypress -->
+  <div class="hud-hint" id="controls-hint">
+    <span class="hint-key">W A S D</span> Move &nbsp;·&nbsp;
+    <span class="hint-key">Drag</span> Rotate Camera
+  </div>
+
+  <!-- ── MOBILE CONTROLS ── -->
+
+  <!-- Left half: virtual joystick -->
+  <div id="joystick-zone">
+    <div id="joystick-knob"></div>
+  </div>
+
+  <!-- Right half: camera rotation drag area -->
+  <div id="cam-rotate-zone"></div>
+
+</div><!-- /#s-game -->
+
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -84,8 +136,5 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script src="src/app.js"></script>
-<script>
-
-</script>
 </body>
 </html>

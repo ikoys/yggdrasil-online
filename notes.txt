@@ -1,0 +1,4 @@
+adjusting notes/ hehe
+
+speed MOVE_SPEED : 30.0,
+character size         const baseScale  = skelH > 0.01 ? 1.8 / skelH : 1;

@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap');
 
 :root {
   --gold:      #ffd24b;
@@ -65,7 +65,6 @@ body {
 }
 #s-create.show { display: flex; }
 
-/* Landscape two-column wrap */
 .cc-wrap {
   display: flex;
   flex-direction: row;
@@ -79,7 +78,6 @@ body {
   overflow: hidden;
 }
 
-/* LEFT — 3D model viewport */
 .cc-viewport {
   flex: 1 1 55%;
   position: relative;
@@ -106,7 +104,6 @@ body {
   white-space: nowrap;
 }
 
-/* RIGHT — controls panel */
 .cc-panel {
   flex: 0 0 auto;
   width: min(320px, 42vw);
@@ -152,7 +149,6 @@ body {
   background: rgba(0,0,0,.6);
 }
 
-/* Skin tone swatches */
 .cc-colors {
   display: flex; gap: 10px; flex-wrap: wrap;
 }
@@ -166,7 +162,6 @@ body {
 .cc-color.selected { border-color: var(--gold); transform: scale(1.15); }
 .cc-color:active   { transform: scale(.95); }
 
-/* Spacer pushes buttons to bottom */
 .cc-spacer { flex: 1; }
 
 .cc-btns { display: flex; gap: 10px; }
@@ -217,7 +212,6 @@ body {
   .cc-btn   { padding: 15px 8px; font-size: 11px; }
 }
 
-/* ── LANDSCAPE PHONE (e.g. 667px wide in landscape) ─── */
 @media (max-height: 500px) and (orientation: landscape) {
   .cc-panel { padding: 14px 16px; gap: 10px; }
   .cc-ttl   { font-size: 13px; padding-bottom: 10px; }
@@ -225,26 +219,212 @@ body {
   .cc-color { width: 30px; height: 30px; }
   .cc-btn   { padding: 10px 6px; }
 }
-  /* Portrait overlay — shown when device is held upright */
-  #rotate-prompt {
-    display: none;
-    position: fixed; inset: 0; z-index: 9999;
-    background: #060d04;
-    flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 16px;
-    color: #ffd24b;
-    font-family: 'Cinzel', Georgia, serif;
-    text-align: center;
-    padding: 24px;
-  }
-  #rotate-prompt .rp-icon { font-size: 56px; animation: spin90 1.2s ease-in-out infinite alternate; }
-  #rotate-prompt .rp-msg  { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #afa284; }
-  @keyframes spin90 {
-    from { transform: rotate(0deg);   }
-    to   { transform: rotate(90deg);  }
-  }
-  @media (orientation: portrait) {
-    #rotate-prompt { display: flex; }
-    body > *:not(#rotate-prompt) { display: none !important; }
-  }
+
+#rotate-prompt {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: #060d04;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+  color: #ffd24b;
+  font-family: 'Cinzel', Georgia, serif;
+  text-align: center;
+  padding: 24px;
+}
+#rotate-prompt .rp-icon { font-size: 56px; animation: spin90 1.2s ease-in-out infinite alternate; }
+#rotate-prompt .rp-msg  { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #afa284; }
+@keyframes spin90 {
+  from { transform: rotate(0deg);  }
+  to   { transform: rotate(90deg); }
+}
+@media (orientation: portrait) {
+  #rotate-prompt { display: flex; }
+  body > *:not(#rotate-prompt) { display: none !important; }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   GAME WORLD
+══════════════════════════════════════════════════════ */
+
+#s-game {
+  position: fixed; inset: 0;
+  display: none;       /* shown by Game.init() */
+  background: #050a03;
+  z-index: 50;
+}
+
+#game-canvas {
+  width: 100%; height: 100%;
+  display: block;
+  touch-action: none;  /* prevent browser scroll/zoom on canvas */
+}
+
+
+/* ── Loading overlay ──────────────────────────────────── */
+#loading-overlay {
+  position: absolute; inset: 0;
+  background: #060d04;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 60;
+  transition: opacity 0.6s ease;
+}
+.lo-inner {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 14px;
+  text-align: center;
+}
+.lo-leaf  {
+  font-size: 52px;
+  animation: lo-pulse 1.8s ease-in-out infinite;
+}
+@keyframes lo-pulse {
+  0%,100% { opacity: .5; transform: scale(.9);  }
+  50%      { opacity: 1;  transform: scale(1.05); }
+}
+.lo-title {
+  font-family: 'Cinzel', serif;
+  font-size: 22px; font-weight: 900;
+  color: var(--gold); letter-spacing: 6px;
+}
+.lo-msg {
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 3px;
+  color: var(--text-muted); text-transform: uppercase;
+}
+.lo-bar {
+  width: 200px; height: 3px;
+  background: rgba(255,210,75,.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.lo-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd24b, #ff8000);
+  border-radius: 2px;
+  animation: lo-slide 2s ease-in-out infinite;
+}
+@keyframes lo-slide {
+  0%   { width: 0%;   opacity: 1; }
+  70%  { width: 100%; opacity: 1; }
+  100% { width: 100%; opacity: 0; }
+}
+
+
+/* ── HUD ─────────────────────────────────────────────── */
+.hud-topleft {
+  position: absolute; top: 18px; left: 18px;
+  z-index: 55; pointer-events: none;
+  display: flex; flex-direction: column; gap: 7px;
+}
+
+.hud-nameplate {
+  display: flex; flex-direction: column; gap: 2px;
+  background: rgba(4,9,3,0.72);
+  border: 1px solid var(--gold-edge);
+  border-radius: 4px;
+  padding: 8px 14px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.hud-charname {
+  font-family: 'Cinzel', serif;
+  font-size: 13px; font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+.hud-charclass {
+  font-family: 'Cinzel', serif;
+  font-size: 9px; letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.hud-hprow {
+  display: flex; align-items: center; gap: 7px;
+}
+.hud-hplabel {
+  font-family: 'Cinzel', serif;
+  font-size: 9px; letter-spacing: 1px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.hud-healthbar {
+  width: 130px; height: 7px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(80,160,60,.4);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hud-health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1f6b16, #3daa2e);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.hud-hpnum {
+  font-family: 'Cinzel', serif;
+  font-size: 9px; letter-spacing: 1px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Controls hint bar at bottom */
+.hud-hint {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 55; pointer-events: none;
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 1.5px;
+  color: rgba(175,162,132,0.55);
+  white-space: nowrap;
+  transition: opacity 1s ease;
+}
+.hint-key {
+  display: inline-block;
+  background: rgba(255,210,75,.12);
+  border: 1px solid var(--gold-edge);
+  border-radius: 3px;
+  padding: 1px 6px;
+  color: rgba(255,210,75,0.7);
+  font-size: 9px;
+}
+
+
+/* ── Mobile virtual joystick (left) ──────────────────── */
+#joystick-zone {
+  position: absolute;
+  bottom: 36px; left: 36px;
+  width: 112px; height: 112px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.32);
+  border: 2px solid rgba(255,210,75,0.18);
+  /* hidden by default; shown via JS when touch detected */
+  display: none;
+  align-items: center; justify-content: center;
+  touch-action: none;
+  user-select: none; -webkit-user-select: none;
+  z-index: 55;
+}
+
+#joystick-knob {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%,
+    rgba(255,230,80,0.90),
+    rgba(200,100,0,0.65));
+  border: 1px solid rgba(255,210,75,0.55);
+  pointer-events: none;
+  will-change: transform;
+}
+
+
+/* ── Camera rotate zone (right half, mobile) ─────────── */
+#cam-rotate-zone {
+  position: absolute;
+  top: 0; right: 0;
+  width: 50%; height: 100%;
+  touch-action: none;
+  display: none;  /* shown via JS when touch detected */
+  z-index: 54;
+}
