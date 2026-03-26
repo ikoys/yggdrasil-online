@@ -642,6 +642,7 @@ this._town.traverse(child => {
         this._char.scale.setScalar(finalScale);
         this._char.position.set(11, 11, 11); // x, z = where on the map, y=10 so it drops onto terrain
 
+
         // Apply chosen skin colour
         const skinColor = new THREE.Color(this._charData?.color || '#fff0e6');
         this._char.traverse(child => {
