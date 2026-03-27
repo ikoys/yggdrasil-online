@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -6,10 +6,15 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#060d04">
+<link rel="manifest" href="src/manifest.json">
 <title>Yggdrasil Online</title>
 <link rel="stylesheet" href="src/style.css" />
 </head>
 <body>
+
+<!-- PWA INSTALL BAR -------------------------------------------------------->
+<div id="pwa-bar"><div class="pwa-in"><div style="font-size:28px">🍃</div><div class="pwa-sub"><div class="pwa-ttl">Install Yggdrasil Online</div>Play offline like a native app</div><div class="pwa-btns"><button class="pwa-inst" onclick="PWA.install()">Install</button><button class="pwa-dis" onclick="PWA.dismiss()">✕</button></div></div></div>
 
 <!-- PORTRAIT LOCK OVERLAY -------------------------------------------------->
 <div id="rotate-prompt">
@@ -19,59 +24,68 @@
 
 <!-- LANDING ---------------------------------------------------------------->
 <div id="s-auth">
+  <div id="lf-c"></div>
   <span class="a-leaf">🍃</span>
   <span class="a-ygg">YGG</span>
-  <div class="a-sub">Yggdrasil Online</div>
+  <div class="a-sub">Yggdrasil Online · Aincrad</div>
   <div class="a-box">
     <div class="a-ttl">⟨ Enter the World ⟩</div>
-    <button class="btn-g"  onclick="CharCreate.show('google')">Continue with Google</button>
-    <div class="a-note">Progress saved across all devices.</div>
-    <hr class="a-divider" />
+    <button class="btn-g" onclick="Auth.google()">
+      <svg width="15" height="15" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 002.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 01-7.18-2.54H1.83v2.07A8 8 0 008.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 010-3.04V5.41H1.83a8 8 0 000 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 001.83 5.4L4.5 7.49a4.77 4.77 0 014.48-3.3z"/></svg>
+      Continue with Google
+    </button>
+    <div class="a-or">— or —</div>
     <button class="btn-gs" onclick="Auth.guest()">⟩ Play as Guest ⟨</button>
-    <div class="a-note">Guest progress saved locally only.</div>
+    <div class="a-note">Google saves across devices.<br>Guest saves locally only.</div>
   </div>
 </div>
 
 <!-- CHARACTER CREATION ----------------------------------------------------->
 <div class="screen hidden" id="s-create">
-  <div class="cc-wrap">
-
-    <!-- LEFT: 3D model viewport -->
-    <div class="cc-viewport">
-      <canvas id="model-canvas"></canvas>
-      <div class="cc-class-badge">⚔ SWORDSMAN</div>
-    </div>
-
-    <!-- RIGHT: controls panel -->
-    <div class="cc-panel">
-      <div class="cc-ttl">Create Character</div>
-
-      <div class="cc-field">
-        <label class="cc-lbl" for="char-name">Character Name</label>
-        <input type="text" id="char-name" class="cc-inp"
-               placeholder="Enter your name…" maxlength="20"
+  <div id="cc-wrap">
+    <div id="cc-left">
+      <canvas id="cc-cv"></canvas>
+      <div id="cc-namerow">
+        <input id="cc-ni" class="cc-ninp" type="text" placeholder="Character Name…" maxlength="16"
                autocomplete="off" autocorrect="off" spellcheck="false" />
       </div>
-
-      <div class="cc-field">
-        <label class="cc-lbl">Skin Tone</label>
-        <div class="cc-colors" id="color-picker">
-          <div class="cc-color selected" style="background:#fff0e6" data-color="#fff0e6" onclick="CharCreate.selectColor(this)"></div>
-          <div class="cc-color"          style="background:#f4d4b0" data-color="#f4d4b0" onclick="CharCreate.selectColor(this)"></div>
-          <div class="cc-color"          style="background:#d4a574" data-color="#d4a574" onclick="CharCreate.selectColor(this)"></div>
-          <div class="cc-color"          style="background:#b8860b" data-color="#b8860b" onclick="CharCreate.selectColor(this)"></div>
-          <div class="cc-color"          style="background:#8b6914" data-color="#8b6914" onclick="CharCreate.selectColor(this)"></div>
-        </div>
-      </div>
-
-      <div class="cc-spacer"></div>
-
-      <div class="cc-btns">
-        <button class="cc-btn cc-back"   onclick="Auth.backToLogin()">← Back</button>
-        <button class="cc-btn cc-create" onclick="CharCreate.submit()">Create</button>
-      </div>
     </div>
+    <div id="cc-right">
+      <div class="cc-rtop">
+        <button class="cc-back" onclick="showScreen('auth')">◀ Back</button>
+        <div class="cc-title">Avatar Settings</div>
+        <button class="cc-done" onclick="CC.finish()">Done ▶</button>
+      </div>
+      <div id="cc-rows"></div>
+      <button class="cc-create" onclick="CC.finish()">Create Character</button>
+    </div>
+  </div>
+</div>
 
+<!-- FLOOR TRANSITION -------------------------------------------------------->
+<div class="screen hidden" id="s-trans">
+  <div class="tr-fl" id="tr-fl">FLOOR 1</div>
+  <div class="tr-nm" id="tr-nm">—</div>
+  <div class="tr-cy" id="tr-cy">⟨ CITY ⟩</div>
+  <div class="tr-ds" id="tr-ds"></div>
+  <div class="tr-bar"><div class="tr-pg" id="tr-pg"></div></div>
+</div>
+
+<!-- BOSS INTRO ------------------------------------------------------------->
+<div class="screen hidden" id="s-boss">
+  <span class="bi-em" id="bi-em">💀</span>
+  <div class="bi-lbl">⚠ FLOOR BOSS APPEARS</div>
+  <div class="bi-nm" id="bi-nm">BOSS</div>
+</div>
+
+<!-- LEVEL UP POPUP --------------------------------------------------------->
+<div id="lvup-popup">
+  <div class="lvup-box">
+    <div class="lvup-ttl">LEVEL UP</div>
+    <div class="lvup-sub" id="lv-sub">NOW LEVEL 2</div>
+    <div class="lvup-pts" id="lv-pts">5 points to spend</div>
+    <div id="stat-rows"></div>
+    <button class="btn-p" onclick="LvUp.confirm()" id="lv-confirm">Confirm</button>
   </div>
 </div>
 
@@ -93,29 +107,163 @@
     </div>
   </div>
 
-  <!-- HUD — top-left character info -->
-  <div class="hud-topleft">
-    <div class="hud-nameplate">
-      <span class="hud-charname" id="hud-name">HERO</span>
-      <span class="hud-charclass">⚔ SWORDSMAN</span>
-    </div>
-    <div class="hud-hprow">
-      <span class="hud-hplabel">HP</span>
-      <div class="hud-healthbar">
-        <div class="hud-health-fill" style="width:100%"></div>
+  <!-- GAME UI (HUD, panels, etc.) -->
+  <div id="ui" class="hidden">
+
+    <!-- HUD top-left: level, name, bars -->
+    <div id="hud">
+      <div class="h-top">
+        <span class="lv-b" id="lv-b">Lv 1</span>
+        <span class="h-nm" id="h-nm">Wanderer</span>
       </div>
-      <span class="hud-hpnum">100</span>
+      <div class="br"><div class="bl"><span>HP</span><span id="hp-t">200/200</span></div><div class="bw"><div class="bf" id="hp-f" style="width:100%"></div></div></div>
+      <div class="br"><div class="bl"><span>SP</span><span id="sp-t">100/100</span></div><div class="bw"><div class="bf" id="sp-f" style="width:100%"></div></div></div>
+      <div class="br"><div class="bl"><span>XP</span><span id="xp-t">0/100</span></div><div class="bw"><div class="bf" id="xp-f"></div></div></div>
     </div>
-  </div>
+
+    <!-- Weapon type & gold indicators -->
+    <div id="wtype">⚔️ <span id="wt-txt">1-H Sword</span></div>
+    <div id="gold-d">🪙 <span id="gold-t">0</span></div>
+
+    <!-- Floor indicator -->
+    <div id="floor-d">FLOOR <span id="fl-n">1</span> — <span id="fl-nm">Midgard</span></div>
+
+    <!-- Safe zone indicator -->
+    <div id="safe-b">✦ SAFE ZONE</div>
+
+    <!-- Bleed indicator -->
+    <div id="bleed-ind">🩸 BLEEDING</div>
+
+    <!-- Dual wield unlock notice -->
+    <div id="dual-notice">⚔⚔ DUAL WIELD UNLOCKED</div>
+
+    <!-- Target HUD -->
+    <div id="thud">
+      <div id="t-nm">Enemy</div>
+      <div id="t-hw"><div id="t-hf"></div></div>
+      <div id="t-type">Normal</div>
+    </div>
+
+    <!-- Minimap -->
+    <div id="mm">
+      <canvas id="mm-c" width="84" height="84"></canvas>
+      <div class="mm-l" id="mm-l">MIDGARD</div>
+    </div>
+
+    <!-- Boss HP bar -->
+    <div id="bossbar">
+      <div id="boss-nm">BOSS</div>
+      <div id="boss-bw"><div id="boss-bf"></div></div>
+    </div>
+
+    <!-- Quest tracker -->
+    <div id="qt">
+      <div class="qt-t">⟨ QUESTS ⟩</div>
+      <div id="qt-c"><div class="qt-e">No active quests</div></div>
+    </div>
+
+    <!-- NPC interaction hint -->
+    <div id="npc-hint" onclick="Dialogue.openNearby()" ontouchstart="Dialogue.openNearby()">👆 TAP TO TALK</div>
+
+    <!-- Dialogue box -->
+    <div id="dlg">
+      <div class="dlg-sp" id="dlg-sp">NPC</div>
+      <div class="dlg-tx" id="dlg-tx">…</div>
+      <div class="dlg-cc" id="dlg-cc"></div>
+    </div>
+
+    <!-- Chat window -->
+    <div id="chat-w">
+      <div class="c-tabs">
+        <div class="c-tab active" id="tab-w" onclick="Chat.tab('world')">World</div>
+        <div class="c-tab" id="tab-p" onclick="Chat.tab('party')">Party</div>
+      </div>
+      <div id="chat-log"></div>
+      <div class="c-inp-r">
+        <input id="chat-inp" type="text" placeholder="Say something…" maxlength="100" autocomplete="off">
+        <button id="chat-snd" onclick="Chat.send()">➤</button>
+      </div>
+    </div>
+
+    <!-- Skill buttons -->
+    <div id="skills">
+      <div class="sk" id="sk0" ontouchstart="Combat.skill(0)" onclick="Combat.skill(0)"><span class="sknm" id="sn0"></span><span id="si0">⚔️</span><span class="cdt" id="cd0"></span></div>
+      <div class="sk" id="sk1" ontouchstart="Combat.skill(1)" onclick="Combat.skill(1)"><span class="sknm" id="sn1"></span><span id="si1">✦</span><span class="cdt" id="cd1"></span></div>
+      <div class="sk" id="sk2" ontouchstart="Combat.skill(2)" onclick="Combat.skill(2)"><span class="sknm" id="sn2"></span><span id="si2">💥</span><span class="cdt" id="cd2"></span></div>
+      <div class="sk" id="sk3" ontouchstart="Combat.skill(3)" onclick="Combat.skill(3)"><span class="sknm" id="sn3"></span><span id="si3">🌀</span><span class="cdt" id="cd3"></span></div>
+    </div>
+
+    <!-- Right action buttons -->
+    <div id="act-r">
+      <div class="act-b" ontouchstart="UI.toggleInv()" onclick="UI.toggleInv()">🎒</div>
+      <div class="act-b" ontouchstart="UI.toggleQ()" onclick="UI.toggleQ()">📜</div>
+      <div class="act-b" ontouchstart="UI.toggleWpn()" onclick="UI.toggleWpn()">⚔️</div>
+    </div>
+
+    <!-- Voice chat -->
+    <div id="voice-w">
+      <div id="voice-btn" ontouchstart="Voice.toggle()" onclick="Voice.toggle()">🎤</div>
+      <div id="mute-btn" ontouchstart="Voice.mute()" onclick="Voice.mute()">🔇</div>
+      <div id="vnear"></div>
+    </div>
+
+    <!-- Notifications & kill log -->
+    <div id="notif"></div>
+    <div id="klog"></div>
+
+    <!-- Shop panel -->
+    <div id="shop-panel">
+      <div class="pnl-box">
+        <div class="pnl-hdr"><span id="sh-ttl">⟨ SHOP ⟩</span><span class="pnl-x" ontouchstart="UI.closeShop()" onclick="UI.closeShop()">✕</span></div>
+        <div class="sh-gold">🪙 Gold: <span id="sh-gold">0</span></div>
+        <div id="sh-grid"></div>
+      </div>
+    </div>
+
+    <!-- Inventory panel -->
+    <div id="inv-panel">
+      <div class="pnl-box">
+        <div class="pnl-hdr"><span>⟨ INVENTORY ⟩</span><span class="pnl-x" ontouchstart="UI.toggleInv()" onclick="UI.toggleInv()">✕</span></div>
+        <div style="font-family:var(--font-t);font-size:8px;color:rgba(201,168,76,.4);letter-spacing:2px;margin-bottom:8px">EQUIPMENT</div>
+        <div class="eq-grid">
+          <div class="eq-slot"><div class="eq-lbl">WEAPON</div><div class="eq-ico" id="eq-w">⬜</div><div class="eq-nm" id="eq-wn">Empty</div></div>
+          <div class="eq-slot"><div class="eq-lbl">ARMOR</div><div class="eq-ico" id="eq-a">⬜</div><div class="eq-nm" id="eq-an">Empty</div></div>
+          <div class="eq-slot"><div class="eq-lbl">SHIELD/ACC</div><div class="eq-ico" id="eq-c">⬜</div><div class="eq-nm" id="eq-cn">Empty</div></div>
+        </div>
+        <div style="font-family:var(--font-t);font-size:8px;color:rgba(201,168,76,.4);letter-spacing:2px;margin-bottom:8px">STATS</div>
+        <div id="stat-display"></div>
+        <div style="font-family:var(--font-t);font-size:8px;color:rgba(201,168,76,.4);letter-spacing:2px;margin:10px 0 8px">ITEMS</div>
+        <div class="inv-grid" id="inv-grid"></div>
+      </div>
+    </div>
+
+    <!-- Weapon mastery panel -->
+    <div id="wpn-panel">
+      <div class="pnl-box">
+        <div class="pnl-hdr"><span>⟨ WEAPON MASTERY ⟩</span><span class="pnl-x" ontouchstart="UI.toggleWpn()" onclick="UI.toggleWpn()">✕</span></div>
+        <div id="prof-list"></div>
+      </div>
+    </div>
+
+    <!-- Quest log panel -->
+    <div id="quest-panel">
+      <div class="pnl-box">
+        <div class="pnl-hdr"><span>⟨ QUEST LOG ⟩</span><span class="pnl-x" ontouchstart="UI.toggleQ()" onclick="UI.toggleQ()">✕</span></div>
+        <div id="quest-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /#ui -->
 
   <!-- Controls hint — fades out after first keypress -->
   <div class="hud-hint" id="controls-hint">
     <span class="hint-key">W A S D</span> Move &nbsp;·&nbsp;
-    <span class="hint-key">Drag</span> Rotate Camera
+    <span class="hint-key">Z X C V</span> Skills &nbsp;·&nbsp;
+    <span class="hint-key">F</span> Talk &nbsp;·&nbsp;
+    <span class="hint-key">Drag</span> Camera
   </div>
 
   <!-- ── MOBILE CONTROLS ── -->
-
   <!-- Left half: virtual joystick -->
   <div id="joystick-zone">
     <div id="joystick-knob"></div>

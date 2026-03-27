@@ -2,3 +2,7 @@ adjusting notes/ hehe
 
 speed MOVE_SPEED : 30.0,
 character size         const baseScale  = skelH > 0.01 ? 1.8 / skelH : 1;
+location spawn this._char.position.set
+this._joystick.y = ny * (clamp / MAX_R); const sin = Math.sin(this._camYaw), cos = Math.cos(this._camYaw);
+const dx = (ix * cos - iz * sin) * S.spd * dt;
+const dz = (ix * sin + iz * cos) * S.spd * dt;
