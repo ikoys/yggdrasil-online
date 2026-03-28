@@ -132,7 +132,7 @@ const WTYPES = {
 };
 
 const DATA = {
-  enemies: {
+  /*enemies: {
     draugr:     { name:'Draugr',       hp:80,  def:4,  atk:10, spd:2.0, xp:25, gold:[8,15],  sz:1.0, shp:'biped',  c:0x445566, type:'armored', aggr:8,  drops:[{i:'wolfsbane',ch:.15}] },
     forestWolf: { name:'Forest Wolf',  hp:55,  def:2,  atk:12, spd:3.5, xp:18, gold:[5,10],  sz:0.9, shp:'wolf',   c:0x5a4a3a, type:'fast',    aggr:9,  drops:[{i:'wolfsbane',ch:.25}] },
     goblin:     { name:'Goblin',       hp:45,  def:1,  atk:8,  spd:3.2, xp:14, gold:[4,9],   sz:0.75,shp:'biped',  c:0x4a7a2a, type:'fast',    aggr:7,  drops:[{i:'hpPotion',ch:.1}]  },
@@ -140,7 +140,7 @@ const DATA = {
     treant:     { name:'Treant',       hp:200, def:8,  atk:20, spd:1.0, xp:70, gold:[25,45], sz:1.5, shp:'biped',  c:0x3a5a1a, type:'armored', aggr:5,  drops:[{i:'leatherArmor',ch:.08}] },
     elderDraugr:{ name:'Elder Draugr', hp:320, def:14, atk:28, spd:2.2, xp:120,gold:[40,70], sz:1.3, shp:'boss',   c:0x334455, type:'armored', aggr:12, boss:true, emoji:'💀',
                   drops:[{i:'chainMail',ch:.15},{i:'steelSword',ch:.1}] },
-  },
+  },*/
 
   floor1: {
     enemies: ['draugr','forestWolf','goblin','darkKnight','treant'],
@@ -1748,11 +1748,15 @@ const Game = {
     this._renderer.toneMapping       = THREE.ACESFilmicToneMapping;
     this._renderer.toneMappingExposure = 1.25;
 
-    window.addEventListener('resize', () => {
-      this._camera.aspect = innerWidth / innerHeight;
-      this._camera.updateProjectionMatrix();
-      this._renderer.setSize(innerWidth, innerHeight);
-    });
+    let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    this._camera.aspect = innerWidth / innerHeight;
+    this._camera.updateProjectionMatrix();
+    this._renderer.setSize(innerWidth, innerHeight);
+  }, 100);
+});
   },
 
   // ── Sunset sky (unchanged from original app.js) ─────────────
@@ -2241,9 +2245,9 @@ this._runAction.timeScale = targetTs;
   if (snap) {
     this._camera.position.set(tx, ty, tz);
   } else {
-    this._camera.position.x = THREE.MathUtils.lerp(this._camera.position.x, tx, 0.06);
-    this._camera.position.z = THREE.MathUtils.lerp(this._camera.position.z, tz, 0.06);
-    this._camera.position.y = THREE.MathUtils.lerp(this._camera.position.y, ty, 0.06);
+    this._camera.position.x = THREE.MathUtils.lerp(this._camera.position.x, tx, 1);
+    this._camera.position.z = THREE.MathUtils.lerp(this._camera.position.z, tz, 1);
+    this._camera.position.y = THREE.MathUtils.lerp(this._camera.position.y, ty, 0.03);
   }
 
   this._camera.lookAt(target.position.x, target.position.y + 1.1, target.position.z);
@@ -2262,7 +2266,7 @@ this._runAction.timeScale = targetTs;
     if (forceSnap) {
       obj.position.y = groundY;
     } else {
-      obj.position.y = THREE.MathUtils.lerp(obj.position.y, groundY, 0.15);
+      obj.position.y = THREE.MathUtils.lerp(obj.position.y, groundY, 0.05);
     }
   }
 },

@@ -429,7 +429,7 @@ body {
 #cam-rotate-zone {
   position: absolute;
   top: 0; right: 0;
-  width: 50%; height: 100%;
+  width: 100%; height: 100%;
   touch-action: none;
   display: block;
   z-index: 54;
