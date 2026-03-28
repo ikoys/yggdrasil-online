@@ -78,7 +78,9 @@ function showScreen(name) {
   if (ui) {
     if (activeName === 'game') ui.classList.remove('hidden');
     else ui.classList.add('hidden');
+
   }
+  
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -429,18 +431,23 @@ setTimeout(() => {
     console.log("[Auth] No guest save. Moving to Character Creation.");
     // Reset state to defaults for a new player
     S = {
-      uid: 'guest_' + Date.now(),
-      isGuest: true,
-      name: '',
-      lv: 1,
-      xp: 0,
-      hp: 200, maxHp: 200,
-      sp: 100, maxSp: 100,
-      str: 5, agi: 5, vit: 5, dex: 5,
-      gold: 0,
-      inv: [],
-      equips: { weapon: null, armor: null, accessory: null }
-    };
+  uid: 'guest_' + Date.now(),
+  isGuest: true,
+  user: 'Wanderer',
+  skin: '#d4a882',
+  lv: 1, xp: 0, xpN: 100,
+  hp: 200, maxHp: 200,
+  sp: 100, maxSp: 100,
+  str: 5, agi: 5, vit: 5, dex: 5,
+  statPts: 0,
+  gold: 0, wtype: '1h',
+  prof: {},
+  bleedStacks: 0, bleedTimer: 0, bleedTarget: null,
+  inv: [], eq: { weapon: null, armor: null, accessory: null },
+  target: null, atkCd: 0, iF: 0, scd: [0,0,0,0],
+  inBoss: false, inSafe: false, chatTab: 'world',
+};
+Object.keys(WTYPES).forEach(k => S.prof[k] = 0);
     showScreen('s-create'); // Show the creation UI
     CC.show('guest');     // Start the 3D preview scene
   }
@@ -1028,8 +1035,14 @@ const Ens = {
     const sp = this.spts[si % this.spts.length];
     const sx = sp[0] + rnd(-3, 3), sz = sp[1] + rnd(-3, 3);
     const mesh = this._mk(td);
-    mesh.position.set(sx, 0, sz);
+    mesh.position.set(sx, 500, sz);
     Game._scene.add(mesh);
+    // Snap to terrain
+    const origin = new THREE.Vector3(sx, 500, sz);
+    Game._raycaster.set(origin, new THREE.Vector3(0, -1, 0));
+    const hits = Game._raycaster.intersectObjects(Game._terrainMeshes, false);
+    if (hits.length > 0) mesh.position.y = hits[0].point.y;
+    else mesh.position.y = 0;
     this.list.push({
       id:tid, mesh, type:td, hp:td.hp, maxHp:td.hp, def:td.def,
       state:'idle', atkCd:0, idleT:rnd(.8, 2.5), alive:true,
@@ -1040,21 +1053,34 @@ const Ens = {
   },
 
   spawnBoss(tid) {
-    const td = DATA.enemies[tid];
-    if (!td) return null;
-    const mesh = this._mk(td);
-    mesh.position.set(0, 0, -54);
-    mesh.scale.setScalar(1.2);
-    Game._scene.add(mesh);
-    const e = {
-      id:tid, mesh, type:td, hp:td.hp, maxHp:td.hp, def:td.def,
-      state:'idle', atkCd:0, idleT:1, alive:true,
-      aggrR:22, atkR:4.5, ox:0, oz:-54, wobble:0, stunT:0,
-      isBoss:true, armorBroken:false, pTgt: new THREE.Vector3(0, 0, -54)
-    };
-    this.list.push(e);
-    return e;
-  },
+  const td = DATA.enemies[tid];
+  if (!td) return null;
+
+  const mesh = this._mk(td);
+  mesh.scale.setScalar(1.2);
+
+  // Snap to terrain
+  const bossX = 0, bossZ = -54;
+  mesh.position.set(bossX, 500, bossZ);
+  Game._scene.add(mesh);
+
+  const origin = new THREE.Vector3(bossX, 500, bossZ);
+  Game._raycaster.set(origin, new THREE.Vector3(0, -1, 0));
+  const hits = Game._raycaster.intersectObjects(Game._terrainMeshes, false);
+  const groundY = hits.length > 0 ? hits[0].point.y : 0;
+  mesh.position.set(bossX, groundY, bossZ);
+
+  const e = {
+    id:tid, mesh, type:td, hp:td.hp, maxHp:td.hp, def:td.def,
+    state:'idle', atkCd:0, idleT:1, alive:true,
+    aggrR:22, atkR:4.5, ox:bossX, oz:bossZ,
+    wobble:0, stunT:0, isBoss:true, armorBroken:false,
+    pTgt: new THREE.Vector3(bossX, groundY, bossZ)
+  };
+
+  this.list.push(e);
+  return e;
+},
 
   _mk(td) {
     const g   = new THREE.Group();
@@ -1636,9 +1662,9 @@ const Game = {
   CHAR_SCALE : 1.0,
   TOWN_SCALE : 1.0,
   MOVE_SPEED : 30.0,
-  CAM_DIST   : 5.5,
-  CAM_HEIGHT : 2.8,
-  CAM_LERP   : 0.12,
+  CAM_DIST   : 8,
+  CAM_HEIGHT : 5,
+  CAM_LERP   : 0.06,
   MAP_RADIUS : 130,
 
   _scene:    null,
@@ -1686,7 +1712,7 @@ const Game = {
 
   // Setup must happen in this exact order
   this._setupRenderer();   // creates this._scene first
-  this._setupSunsetSky();
+  this._setupDynamicSky();
   this._addGround();
   this._addOcean();
   this._loadCharacter(() => this._loadTown()); // scene exists now
@@ -1730,79 +1756,35 @@ const Game = {
   },
 
   // ── Sunset sky (unchanged from original app.js) ─────────────
-  _setupSunsetSky() {
-  this._scene.fog = new THREE.FogExp2(0xb83800, 0.005);
-  this._scene.add(new THREE.AmbientLight(0xff9955, 0.75));
+  _setupDynamicSky() {
+  // Lights
+  this._ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+  this._scene.add(this._ambientLight);
 
-  const sun = new THREE.DirectionalLight(0xffaa44, 3.8);
-  sun.position.set(120, 28, -200);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.near   = 1;
-  sun.shadow.camera.far    = 600;
-  sun.shadow.camera.left   = -150;
-  sun.shadow.camera.right  = 150;
-  sun.shadow.camera.top    = 150;
-  sun.shadow.camera.bottom = -150;
-  sun.shadow.bias = -0.0005;
-  this._scene.add(sun);
+  this._sunLight = new THREE.DirectionalLight(0xffaa44, 2.0);
+  this._sunLight.position.set(100, 200, 100);
+  this._sunLight.castShadow = true;
+  this._sunLight.shadow.mapSize.set(2048, 2048);
+  this._sunLight.shadow.camera.near   = 1;
+  this._sunLight.shadow.camera.far    = 600;
+  this._sunLight.shadow.camera.left   = -150;
+  this._sunLight.shadow.camera.right  = 150;
+  this._sunLight.shadow.camera.top    = 150;
+  this._sunLight.shadow.camera.bottom = -150;
+  this._sunLight.shadow.bias = -0.0005;
+  this._scene.add(this._sunLight);
 
-  const fill1 = new THREE.DirectionalLight(0xff5500, 0.5);
-  fill1.position.set(-60, 8, 120);
-  this._scene.add(fill1);
+  // 360 sky texture
+  // HDR sky
+const rgbeLoader = new THREE.RGBELoader();
+rgbeLoader.load('src/img/sky.hdr', (texture) => {
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  this._scene.background = texture;
+  this._scene.environment = texture; // also adds realistic lighting
+});
 
-  const fill2 = new THREE.DirectionalLight(0x304080, 0.35);
-  fill2.position.set(0, 100, 150);
-  this._scene.add(fill2);
-
-  const skyGeo = new THREE.SphereGeometry(1500, 32, 20);
-  const pos    = skyGeo.attributes.position;
-  const colors = new Float32Array(pos.count * 3);
-  const tmp    = new THREE.Vector3();
-  const cZenith  = new THREE.Color(0x080c35);
-  const cMidSky  = new THREE.Color(0x7a1228);
-  const cHorizon = new THREE.Color(0xff4800);
-  const cGround  = new THREE.Color(0x0e0501);
-  for (let i = 0; i < pos.count; i++) {
-    tmp.fromBufferAttribute(pos, i).normalize();
-    const t = tmp.y;
-    let c;
-    if (t >= 0) {
-      c = t < 0.25 ? cHorizon.clone().lerp(cMidSky, t / 0.25) : cMidSky.clone().lerp(cZenith, (t - 0.25) / 0.75);
-    } else {
-      c = cHorizon.clone().lerp(cGround, Math.min(1, -t * 3));
-    }
-    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
-  }
-  skyGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  this._scene.add(new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ vertexColors:true, side:THREE.BackSide, fog:false })));
-
-  const makeTex = (size, stops) => {
-    const c = document.createElement('canvas'); c.width = c.height = size;
-    const ctx = c.getContext('2d');
-    const g   = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-    stops.forEach(([s, col]) => g.addColorStop(s, col));
-    ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
-    return new THREE.CanvasTexture(c);
-  };
-
-  const SUN_POS = new THREE.Vector3(600, 90, -1400);
-
-  const disc = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: makeTex(256, [[0,'rgba(255,255,240,1)'],[.06,'rgba(255,250,160,1)'],[.15,'rgba(255,200,50,.9)'],[.3,'rgba(255,120,0,.5)'],[.55,'rgba(255,60,0,.15)'],[1,'rgba(255,30,0,0)']]),
-    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, fog:false
-  }));
-  disc.position.copy(SUN_POS);
-  disc.scale.set(180, 180, 1);
-  this._scene.add(disc);
-
-  const corona = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: makeTex(256, [[0,'rgba(255,120,30,.55)'],[.2,'rgba(255,60,0,.25)'],[.5,'rgba(220,30,0,.08)'],[1,'rgba(180,20,0,0)']]),
-    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, fog:false
-  }));
-  corona.position.copy(SUN_POS);
-  corona.scale.set(700, 700, 1);
-  this._scene.add(corona);
+  // Fog
+  this._scene.fog = new THREE.FogExp2(0x87ceeb, 0.003);
 },
 
   _addGround() {
@@ -1841,7 +1823,7 @@ _loadCharacter(onDone) {
     const skelH = maxY - minY;
     const finalScale = (skelH > 0.01 ? 1.8 / skelH : 2) * this.CHAR_SCALE;
     this._char.scale.setScalar(finalScale);
-    this._char.position.set(0, 500, 0);
+    this._char.position.set(0, 1.535, 0);
     const skinColor = new THREE.Color(S.skin || '#fff0e6');
     this._char.traverse(child => {
       if (child.isMesh) {
@@ -1867,50 +1849,116 @@ _loadCharacter(onDone) {
 _loadTown() {
   const loader = this._makeLoader();
   loader.load('src/models/town.glb', (gltf) => {
+
     this._town = gltf.scene;
     this._town.updateMatrixWorld(true);
+
+    // Get raw size before scaling
     const rawBox  = new THREE.Box3().setFromObject(this._town);
-    const rawSize = new THREE.Vector3(); rawBox.getSize(rawSize);
+    const rawSize = new THREE.Vector3();
+    rawBox.getSize(rawSize);
     const rawSpan = Math.max(rawSize.x, rawSize.z, 0.01);
+
+    console.log('[YGG] Town raw size:', rawSize, 'rawSpan:', rawSpan);
+
+    // Scale town to fit the map
     const s = (300 / rawSpan) * this.TOWN_SCALE;
     this._town.scale.setScalar(s);
     this._town.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(this._town);
-    const center = new THREE.Vector3(); box.getCenter(center);
-    this._town.position.x -= center.x;
-    this._town.position.z -= center.z;
-    this._town.position.y -= box.min.y;
-    this._town.traverse(child => {
-      if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
-    });
-    this._scene.add(this._town);
-    this._terrainMeshes = [];
+
+    // Re-measure after scaling then center it
+    const box    = new THREE.Box3().setFromObject(this._town);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    this._town.position.x = -center.x;
+    this._town.position.z = -center.z;
+    this._town.position.y = -box.min.y; // sit on ground
+
+    this._town.updateMatrixWorld(true);
+
+    // Shadows
     this._town.traverse(child => {
       if (child.isMesh) {
-        const nm = child.name.toLowerCase();
-        if (!nm.includes('tree') && !nm.includes('leaf')) this._terrainMeshes.push(child);
+        child.castShadow    = true;
+        child.receiveShadow = true;
       }
     });
+
+    this._scene.add(this._town);
+    console.log('[YGG] Town loaded. Scale:', s, 'RawSpan:', rawSpan, 'FinalBox:', new THREE.Box3().setFromObject(this._town));
+
+    // Terrain meshes for snap (exclude trees/leaves)
+    this._terrainMeshes = [];
+this._town.traverse(child => {
+  if (child.isMesh) {
+    const nm = child.name.toLowerCase();
+    const isVegetation = 
+      nm.includes('leaf') ||
+      nm.includes('leave') ||
+      nm.includes('foliage') ||
+      nm.includes('branch') ||
+      nm.includes('bush') ||
+      nm.includes('card') ||
+      nm.includes('autumn') ||
+      nm.includes('hq_oak') ||
+      nm.includes('lantern') ||
+      nm.includes('billboard') ||
+      nm.includes('bucket');
+    if (!isVegetation) this._terrainMeshes.push(child);
+  }
+});
+console.log('[YGG] Terrain only meshes:', this._terrainMeshes.map(m => m.name));
+
+    // Collision meshes
     this._collisionMeshes = [];
-    this._town.traverse(child => { if (child.isMesh) this._collisionMeshes.push(child); });
-    if (this._char) this._snapToTerrain(this._char, true);
+this._town.traverse(child => {
+  if (child.isMesh) {
+    const nm = child.name.toLowerCase();
+    const isTree = nm.includes('leaf') ||
+                   nm.includes('leave') ||
+                   nm.includes('foliage') ||
+                   nm.includes('branch') ||
+                   nm.includes('oak') ||
+                   nm.includes('bush') ||
+                   nm.includes('card') ||
+                   nm.includes('hq_oak');
+    if (!isTree) this._collisionMeshes.push(child);
+  }
+});
+
+    console.log('[YGG] Terrain meshes:', this._terrainMeshes.length, 'Collision meshes:', this._collisionMeshes.length);
+
+    // Build player mesh
     PM.build();
 
-// Snap PM.group to terrain surface after it's built
-setTimeout(() => {
+    // Wait for PM.group to exist then snap to terrain
+    const snapInterval = setInterval(() => {
   if (PM.group) {
-    PM.group.position.set(0, 500, 0);
-    Game._snapToTerrain(PM.group, true);
-    // Also snap the running.glb char
-    if (Game._char) {
-      Game._char.position.copy(PM.group.position);
+    clearInterval(snapInterval);
+    PPM.group.position.set(0, 50, 0);
+this._snapToTerrain(PM.group, true);
+    if (this._char) {
+      this._char.position.copy(PM.group.position);
+      this._char.rotation.copy(PM.group.rotation);
     }
   }
-}, 100);
+}, 50);
 
-Ens.build();
-this._showLoadStep('town');
-  }, null, err => { console.error('[YGG] Town load error:', err); this._showLoadStep('town'); });
+    // Build enemies
+    Ens.build();
+
+    this._showLoadStep('town');
+
+  }, 
+  (xhr) => {
+    // Progress
+    const pct = Math.round(xhr.loaded / xhr.total * 100);
+    console.log('[YGG] Town loading:', pct + '%');
+  },
+  (err) => {
+    console.error('[YGG] Town load error:', err);
+    this._showLoadStep('town');
+  });
 },
 
 _showLoadStep(which) {
@@ -1957,10 +2005,16 @@ _makeLoader() {
     document.addEventListener('keyup', e => { if (e.target.tagName !== 'INPUT') this._keys[e.code] = false; });
 
     const canvas = document.getElementById('game-canvas');
-    let mDown = false, mLast = 0;
-    canvas.addEventListener('mousedown', e => { mDown = true; this._mouseDown = true; mLast = e.clientX; });
-    canvas.addEventListener('mouseup',   ()  => { mDown = false; this._mouseDown = false; });
-    canvas.addEventListener('mousemove', e => { if (!mDown) return; this._camYaw -= (e.clientX - mLast) * .004; mLast = e.clientX; });
+    let mDown = false, mLast = 0, mLastY = 0;
+canvas.addEventListener('mousedown', e => { mDown = true; this._mouseDown = true; mLast = e.clientX; mLastY = e.clientY; });
+    window.addEventListener('mouseup', () => { mDown = false; this._mouseDown = false; });
+    canvas.addEventListener('mousemove', e => {
+  if (!mDown) return;
+  this._camYaw -= (e.clientX - mLast) * .004;
+  this._camPitch = Math.max(-0.3, Math.min(1.2, this._camPitch + (e.clientY - mLastY) * .003));
+  mLast = e.clientX;
+  mLastY = e.clientY;
+});
     canvas.addEventListener('wheel', e => { e.preventDefault(); this.CAM_DIST = Math.max(2, Math.min(20, this.CAM_DIST + e.deltaY * .01)); }, { passive:false });
     canvas.addEventListener('mouseleave', () => { mDown = false; this._mouseDown = false; });
     this._setupTouch();
@@ -1993,7 +2047,7 @@ _makeLoader() {
     joyZone.addEventListener('touchend',    endJoy, { passive:false });
     joyZone.addEventListener('touchcancel', endJoy, { passive:false });
 
-    let pinchDist = 0, camId = null, camLast = 0;
+    let pinchDist = 0, camId = null, camLast = 0, camLastY = 0;
     camZone.addEventListener('touchstart', e => {
       e.preventDefault();
       if (e.touches.length === 2) {
@@ -2002,7 +2056,7 @@ _makeLoader() {
         pinchDist = Math.sqrt(dx*dx + dy*dy);
       }
       this._mouseDown = true;
-      const t = e.changedTouches[0]; camId = t.identifier; camLast = t.clientX;
+      const t = e.changedTouches[0]; camId = t.identifier; camLast = t.clientX; camLastY = t.clientY;
     }, { passive:false });
     camZone.addEventListener('touchmove', e => {
       e.preventDefault();
@@ -2016,7 +2070,9 @@ _makeLoader() {
       for (const t of e.changedTouches) {
         if (t.identifier !== camId) continue;
         this._camYaw -= (t.clientX - camLast) * .005;
-        camLast = t.clientX;
+this._camPitch = Math.max(-0.3, Math.min(1.2, this._camPitch + (t.clientY - camLastY) * .004));
+camLast = t.clientX;
+camLastY = t.clientY;
       }
     }, { passive:false });
     const endCam = e => { e.preventDefault(); camId = null; this._mouseDown = false; };
@@ -2031,6 +2087,7 @@ _makeLoader() {
       this._animId = requestAnimationFrame(loop);
       const dt = Math.min((t - last) / 1000, 0.05); last = t;
       this._update(dt, t);
+      
       if (this._renderer && this._scene && this._camera) this._renderer.render(this._scene, this._camera);
     };
     loop(0);
@@ -2070,7 +2127,7 @@ const dz = (-iz * cos + ix * sin) * S.spd * dt;
       let diff = targetYaw - pg.rotation.y;
       while (diff >  Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      pg.rotation.y += diff * Math.min(1, 14 * dt);
+      pg.rotation.y += diff * Math.min(1, 5 * dt);
     }
 
     this._snapToTerrain(pg);
@@ -2083,8 +2140,8 @@ const dz = (-iz * cos + ix * sin) * S.spd * dt;
       this._char.position.copy(pg.position);
       this._char.rotation.y = pg.rotation.y;
       if (this._runAction) {
-        const targetTs = isMoving ? (S.spd / 5.0) : 0.0;
-        this._runAction.timeScale = THREE.MathUtils.lerp(this._runAction.timeScale, targetTs, Math.min(1, 8 * dt));
+        const targetTs = isMoving ? 1.2 : 0.0;
+this._runAction.timeScale = targetTs;
       }
       if (this._mixer) this._mixer.update(dt);
     }
@@ -2170,52 +2227,45 @@ const dz = (-iz * cos + ix * sin) * S.spd * dt;
     }
   },
 
-  _updateCamera(snap, dt) {
-    const target = PM.group || this._char;
-    if (!target) return;
-    const tx = target.position.x - Math.sin(this._camYaw) * this.CAM_DIST;
-    const ty = target.position.y  + this.CAM_HEIGHT;
-    const tz = target.position.z  - Math.cos(this._camYaw) * this.CAM_DIST;
-    if (snap) {
-      this._camera.position.set(tx, ty, tz);
-    } else {
-      this._camera.position.lerp(new THREE.Vector3(tx, ty, tz), this.CAM_LERP);
-    }
-    this._camera.lookAt(target.position.x, target.position.y + 1.1, target.position.z);
-  },
+ _updateCamera(snap, dt) {
+  const target = PM.group || this._char;
+  if (!target) return;
 
+  const hDist = this.CAM_DIST * Math.cos(this._camPitch);
+  const vDist = this.CAM_DIST * Math.sin(this._camPitch);
+
+  const tx = target.position.x - Math.sin(this._camYaw) * hDist;
+  const ty = target.position.y + 1.1 + vDist;
+  const tz = target.position.z - Math.cos(this._camYaw) * hDist;
+
+  if (snap) {
+    this._camera.position.set(tx, ty, tz);
+  } else {
+    this._camera.position.x = THREE.MathUtils.lerp(this._camera.position.x, tx, 0.06);
+    this._camera.position.z = THREE.MathUtils.lerp(this._camera.position.z, tz, 0.06);
+    this._camera.position.y = THREE.MathUtils.lerp(this._camera.position.y, ty, 0.06);
+  }
+
+  this._camera.lookAt(target.position.x, target.position.y + 1.1, target.position.z);
+},
   _collide() {
-    if (!this._collisionMeshes.length || !PM.group) return;
-    const CHAR_RADIUS = 0.45;
-    const NUM_RAYS    = 8;
-    const origin = new THREE.Vector3(PM.group.position.x, PM.group.position.y + 0.9, PM.group.position.z);
-    const ray    = new THREE.Raycaster();
-    ray.near = 0; ray.far = CHAR_RADIUS + 0.1;
-    for (let i = 0; i < NUM_RAYS; i++) {
-      const angle = (i / NUM_RAYS) * Math.PI * 2;
-      const dir   = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
-      ray.set(origin, dir);
-      const hits = ray.intersectObjects(this._collisionMeshes, false);
-      if (hits.length && hits[0].distance < CHAR_RADIUS) {
-        const pen = CHAR_RADIUS - hits[0].distance;
-        PM.group.position.x -= dir.x * pen;
-        PM.group.position.z -= dir.z * pen;
-        origin.x -= dir.x * pen; origin.z -= dir.z * pen;
-      }
-    }
+    
   },
 
-  _snapToTerrain(obj, forceSnap = false) {
-    if (!this._terrainMeshes.length) return;
-    const origin = new THREE.Vector3(obj.position.x, obj.position.y + 2, obj.position.z);
-    this._raycaster.set(origin, new THREE.Vector3(0, -1, 0));
-    const hits = this._raycaster.intersectObjects(this._terrainMeshes, false);
-    if (hits.length > 0) {
-      const groundY = hits[0].point.y;
-      if (forceSnap) obj.position.y = groundY;
-      else           obj.position.y = THREE.MathUtils.lerp(obj.position.y, groundY, 0.25);
+ _snapToTerrain(obj, forceSnap = false) {
+  if (!this._terrainMeshes.length) return;
+  const origin = new THREE.Vector3(obj.position.x, obj.position.y + 10, obj.position.z);
+  this._raycaster.set(origin, new THREE.Vector3(0, -1, 0));
+  const hits = this._raycaster.intersectObjects(this._terrainMeshes, false);
+  if (hits.length > 0) {
+    const groundY = hits[0].point.y;
+    if (forceSnap) {
+      obj.position.y = groundY;
+    } else {
+      obj.position.y = THREE.MathUtils.lerp(obj.position.y, groundY, 0.15);
     }
   }
+},
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -2377,9 +2427,10 @@ const dz = (-iz * cos + ix * sin) * S.spd * dt;
 
   <!-- Minimap -->
   <div id="mm">
-    <canvas id="mm-c" width="84" height="84"></canvas>
-    <div class="mm-l">FLOOR 1</div>
-  </div>
+  <canvas id="mm-c" width="84" height="84"></canvas>
+  <div class="mm-l">FLOOR 1</div>
+</div>
+<button id="fs-btn" onclick="UI.toggleFullscreen()" title="Fullscreen">⛶</button>
 
   <!-- Chat -->
   <div id="chat-w">
