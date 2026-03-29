@@ -214,6 +214,7 @@ body {
   width: 100%; height: 100%;
   display: block;
   touch-action: none;
+  #game-canvas { pointer-events: none; }
 }
 
 /* ── Loading overlay ──────────────────────────────── */
@@ -235,6 +236,7 @@ body {
 
 /* ── GAME UI CONTAINER ────────────────────────────── */
 #ui{position:absolute;inset:0;pointer-events:none;z-index:55}
+#ui > * { pointer-events: all; }
 #ui.hidden{display:none}
 #fullscreen-btn {
   position: absolute;
@@ -662,4 +664,486 @@ body.is-mobile #cam-rotate-zone { display: block; }
   .stat-desc { font-size: 1.8vw; }
   .stat-val  { font-size: 3vw; }
   .stat-btn  { width: 6vw; height: 6vw; font-size: 3vw; }
+
+  /* STAT PANEL — two-column layout matching reference */
+  #stat-panel .pnl-box.stat-panel-box {
+    width: 96vw;
+    max-height: 92vh;
+    padding: 1.5vw 2vw;
+    display: flex;
+    flex-direction: column;
+  }
+  #stat-panel .pnl-hdr          { font-size: 1.8vw; margin-bottom: 1.2vw; }
+  #stat-panel .stat-panel-namerow{
+    padding: 0.5vw 1vw;
+    margin-bottom: 1vw;
+    gap: 1vw;
+  }
+  #stat-panel .stat-panel-lv    { font-size: 1.8vw; padding: 0.2vw 0.8vw; }
+  #stat-panel .stat-panel-name  { font-size: 1.8vw; }
+
+  /* Two-column body */
+  #stat-panel .stat-panel-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2vw;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Left column */
+  #stat-panel .stat-panel-left  { display: flex; flex-direction: column; gap: 0.8vw; }
+
+  /* Vitals */
+  #stat-panel .stat-panel-section-label { font-size: 1.3vw; margin-bottom: 0.5vw; margin-top: 0; }
+  #stat-panel .stat-panel-vital {
+    grid-template-columns: 5.5vw 4.5vw 1fr;
+    gap: 0.6vw;
+    margin-bottom: 0.5vw;
+  }
+  #stat-panel .stat-panel-vital-label { font-size: 1.6vw; }
+  #stat-panel .stat-panel-vital-val   { font-size: 1.6vw; }
+  #stat-panel .stat-panel-vital-bar-wrap { height: 1.4vw; }
+
+  /* Combat grid */
+  #stat-panel .stat-panel-combat-grid  { padding: 0.8vw 1vw; margin-bottom: 0.5vw; }
+  #stat-panel .stat-panel-combat-row   {
+    grid-template-columns: 5.5vw 1fr 5.5vw 1fr;
+    gap: 0.2vw 0.8vw;
+    margin-bottom: 0.6vw;
+  }
+  #stat-panel .stat-panel-combat-key  { font-size: 1.5vw; }
+  #stat-panel .stat-panel-combat-val  { font-size: 1.6vw; }
+
+  /* Stat points */
+  #stat-panel .stat-panel-pts-row  { padding: 0.5vw 1vw; margin-bottom: 0; font-size: 1.5vw; }
+  #stat-panel .stat-panel-pts-val  { font-size: 1.8vw; }
+
+  /* Right column — core stats */
+  #stat-panel .stat-panel-right { display: flex; flex-direction: column; gap: 0; }
+  #stat-panel .stat-panel-core-row {
+    grid-template-columns: 4vw 1fr 4vw;
+    gap: 1.2vw;
+    margin-bottom: 1vw;
+    align-items: center;
+  }
+  #stat-panel .stat-panel-core-key      { font-size: 1.6vw; }
+  #stat-panel .stat-panel-core-bar-wrap { height: 1.2vw; }
+  #stat-panel .stat-panel-core-val      { font-size: 1.6vw; }
+
+  /* Gold row */
+  #stat-panel .stat-panel-gold-row { font-size: 1.4vw; margin-top: 1vw; padding-top: 0.8vw; }
+
+  /* MENU BUTTON */
+  #menu-btn             { width: 7vw; height: 6vw; font-size: 3vw; top: 1vw; right: 17vw; }
+  #stat-point-dot       { width: 1.2vw; height: 1.2vw; top: 0.5vw; right: 0.5vw; }
+  #menu-panel           { top: 8vw; right: 17vw; min-width: 22vw; }
+  .menu-panel-item      { font-size: 1.8vw; padding: 1.5vw 2vw; gap: 1.2vw; }
+  .menu-red-dot         { width: 1.2vw; height: 1.2vw; }
+
+  /* CHARACTER SUBMENU */
+  .character-menu-btn   { font-size: 2vw; padding: 2vw 2.5vw; margin-bottom: 1vw; gap: 1.5vw; }
+
+  /* ATTACK BUTTON */
+  .sk-attack            { min-width: 9vw; }
+
+  /* STAT DIST BUTTONS */
+  .stat-dist-btn        { font-size: 2vw; height: 2.8vw; padding: 0 0.6vw; }
+  .stat-dist-row        { grid-template-columns: 4vw 1fr 4vw 3.5vw 3.5vw !important; gap: 1vw; }
+  .stat-dist-pending    { font-size: 1.2vw; }
+  .stat-dist-confirm,
+  .stat-dist-cancel     { font-size: 1.6vw; padding: 1vw; }
+}
+/* ─────────────────────────────────────────────────────────────
+   STAT PANEL
+───────────────────────────────────────────────────────────── */
+#stat-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.82);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  z-index: 500;
+}
+#stat-panel.open { display: flex; }
+
+.stat-panel-box {
+  width: min(520px, 96vw);
+  max-height: 86vh;
+}
+
+/* Two-column body wrapper */
+.stat-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.stat-panel-left  { display: flex; flex-direction: column; }
+.stat-panel-right { display: flex; flex-direction: column; }
+
+/* Name row */
+.stat-panel-namerow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0,0,0,.4);
+  border: 1px solid rgba(201,168,76,.2);
+  border-radius: 3px;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+}
+.stat-panel-lv {
+  font-family: var(--font-t);
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 1px;
+  background: rgba(201,168,76,.15);
+  padding: 2px 7px;
+  border-radius: 2px;
+  border: 1px solid rgba(201,168,76,.35);
+}
+.stat-panel-name {
+  font-family: var(--font-t);
+  font-size: 11px;
+  color: var(--fg);
+  letter-spacing: 2px;
+}
+
+/* Section labels */
+.stat-panel-section-label {
+  font-family: var(--font-t);
+  font-size: 8px;
+  color: rgba(201,168,76,.4);
+  letter-spacing: 2px;
+  margin-bottom: 7px;
+  margin-top: 4px;
+}
+
+/* Vital bars (HP / SP) */
+.stat-panel-vital {
+  display: grid;
+  grid-template-columns: 50px 40px 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+.stat-panel-vital-label {
+  font-family: var(--font-t);
+  font-size: 9px;
+  color: rgba(232,224,200,.55);
+}
+.stat-panel-vital-val {
+  font-family: var(--font-t);
+  font-size: 9px;
+  color: var(--gold);
+  text-align: right;
+}
+.stat-panel-vital-bar-wrap {
+  height: 8px;
+  background: rgba(255,255,255,.08);
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.stat-panel-vital-bar {
+  height: 100%;
+  border-radius: 2px;
+  width: 100%;
+  transition: width .3s;
+}
+.stat-panel-vital-bar.hp-bar { background: linear-gradient(90deg, #b03030, #e05050); }
+.stat-panel-vital-bar.sp-bar { background: linear-gradient(90deg, #1e6098, #3a90d0); }
+
+/* Combat stats grid */
+.stat-panel-combat-grid {
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(201,168,76,.12);
+  border-radius: 3px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.stat-panel-combat-row {
+  display: grid;
+  grid-template-columns: 46px 1fr 46px 1fr;
+  gap: 2px 6px;
+  margin-bottom: 5px;
+}
+.stat-panel-combat-row:last-child { margin-bottom: 0; }
+.stat-panel-combat-key {
+  font-family: var(--font-t);
+  font-size: 9px;
+  color: rgba(232,224,200,.45);
+}
+.stat-panel-combat-val {
+  font-family: var(--font-t);
+  font-size: 9px;
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Stat Points row */
+.stat-panel-pts-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(201,168,76,.08);
+  border: 1px solid rgba(201,168,76,.25);
+  border-radius: 3px;
+  padding: 5px 10px;
+  margin-bottom: 12px;
+  font-family: var(--font-t);
+  font-size: 9px;
+  color: rgba(232,224,200,.6);
+}
+.stat-panel-pts-val {
+  color: var(--gold);
+  font-size: 11px;
+}
+
+/* Core stat rows (STR, INT, VIT, AGI, DEX, CRT) */
+.stat-panel-core-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.stat-panel-core-key {
+  font-family: var(--font-t);
+  font-size: 9px;
+  color: rgba(232,224,200,.55);
+  letter-spacing: 1px;
+}
+.stat-panel-core-bar-wrap {
+  height: 7px;
+  background: rgba(255,255,255,.07);
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.05);
+}
+.stat-panel-core-bar {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(201,168,76,.5), var(--gold));
+  transition: width .3s;
+}
+.stat-panel-core-val {
+  font-family: var(--font-t);
+  font-size: 9px;
+  color: var(--gold);
+  text-align: right;
+}
+
+/* Gold row */
+.stat-panel-gold-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-t);
+  font-size: 9px;
+  color: rgba(232,224,200,.5);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(201,168,76,.12);
+}
+.stat-panel-gold-row span:last-child { color: var(--gold); }
+
+/* HUD top row — subtle hover to signal it's clickable */
+.h-top:hover .lv-b,
+.h-top:hover .h-nm { opacity: .75; }
+
+/* Weapon Mastery panel rows */
+.prof-row { margin-bottom: 14px; }
+.prof-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.prof-ico { font-size: 14px; }
+.prof-name { font-family: var(--font-t); color: var(--gold); font-size: 9px; flex: 1; letter-spacing: 1px; }
+.prof-val { font-family: var(--font-t); color: rgba(232,224,200,.45); font-size: 8px; }
+.prof-bar-wrap { height: 6px; background: rgba(0,0,0,.4); border-radius: 3px; overflow: hidden; border: 1px solid rgba(201,168,76,.15); margin-bottom: 6px; }
+.prof-bar { height: 100%; background: linear-gradient(90deg, rgba(201,168,76,.4), var(--gold)); border-radius: 3px; transition: width .3s; }
+.prof-skills { display: flex; flex-wrap: wrap; gap: 4px; }
+.prof-skill { font-family: var(--font-t); font-size: 8px; color: rgba(232,224,200,.5); background: rgba(0,0,0,.3); border: 1px solid rgba(201,168,76,.12); border-radius: 2px; padding: 2px 5px; }
+
+/* ─────────────────────────────────────────────────────────────
+   MENU BUTTON
+───────────────────────────────────────────────────────────── */
+#menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 18vw; /* sits left of minimap */
+  width: 65px;
+  height: 38px;
+  background: rgba(4,10,3,.82);
+  border: 1px solid rgba(201,168,76,.3);
+  border-radius: 4px;
+  color: var(--gold);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 120;
+  position: absolute;
+}
+
+#stat-point-dot {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: #e74c3c;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.5);
+}
+
+#menu-panel {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: 50px;
+  right: 18vw;
+  background: rgba(4,10,3,.96);
+  border: 1px solid rgba(201,168,76,.25);
+  border-radius: 4px;
+  min-width: 160px;
+  z-index: 200;
+  overflow: hidden;
+}
+#menu-panel.open { display: flex; }
+
+.menu-panel-item {
+  font-family: var(--font-t);
+  font-size: 10px;
+  color: var(--fg);
+  letter-spacing: 1px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(201,168,76,.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.menu-panel-item:last-child { border-bottom: none; }
+.menu-panel-item:active,
+.menu-panel-item:hover { background: rgba(201,168,76,.08); }
+.menu-logout { color: rgba(231,76,60,.7); }
+
+.menu-red-dot {
+  display: none;
+  width: 7px;
+  height: 7px;
+  background: #e74c3c;
+  border-radius: 50%;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CHARACTER SUBMENU PANEL
+───────────────────────────────────────────────────────────── */
+#character-menu-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+#character-menu-panel.open { display: flex; }
+
+.character-menu-btn {
+  font-family: var(--font-t);
+  font-size: 11px;
+  color: var(--fg);
+  letter-spacing: 2px;
+  padding: 14px 20px;
+  margin-bottom: 8px;
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(201,168,76,.2);
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+.character-menu-btn:active { background: rgba(201,168,76,.12); }
+
+/* ─────────────────────────────────────────────────────────────
+   MANUAL ATTACK BUTTON
+───────────────────────────────────────────────────────────── */
+.sk-attack {
+  background: linear-gradient(135deg, rgba(180,30,30,.4), rgba(100,10,10,.6)) !important;
+  border-color: rgba(231,76,60,.5) !important;
+  min-width: 64px;
+}
+.sk-attack:active { background: rgba(231,76,60,.4) !important; }
+
+/* ─────────────────────────────────────────────────────────────
+   STAT DISTRIBUTION BUTTONS (inside stat panel)
+───────────────────────────────────────────────────────────── */
+.stat-dist-row {
+  grid-template-columns: 36px 1fr 36px 24px 24px !important;
+}
+.stat-dist-btn {
+  font-family: var(--font-t);
+  background: rgba(201,168,76,.12);
+  border: 1px solid rgba(201,168,76,.3);
+  color: var(--gold);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 4px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stat-dist-btn:disabled { opacity: .25; cursor: not-allowed; }
+.stat-dist-btn:active   { background: rgba(201,168,76,.3); }
+.stat-dist-minus { color: #e74c3c; border-color: rgba(231,76,60,.3); }
+.stat-dist-pending {
+  color: #4caf50;
+  font-size: 8px;
+  margin-left: 2px;
+}
+
+#stat-dist-actions {
+  display: none;
+  gap: 8px;
+  margin-top: 10px;
+}
+.stat-dist-confirm {
+  flex: 1;
+  background: rgba(76,175,80,.15);
+  border: 1px solid #4caf50;
+  color: #4caf50;
+  font-family: var(--font-t);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 6px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.stat-dist-cancel {
+  flex: 1;
+  background: rgba(231,76,60,.08);
+  border: 1px solid rgba(231,76,60,.35);
+  color: rgba(231,76,60,.7);
+  font-family: var(--font-t);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 6px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+/* Update stat-panel-core-row to accommodate 5-column dist layout */
+.stat-dist-row .stat-panel-core-bar-wrap {
+  min-width: 0;
 }

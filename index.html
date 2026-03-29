@@ -78,17 +78,6 @@
   <div class="bi-nm" id="bi-nm">BOSS</div>
 </div>
 
-<!-- LEVEL UP POPUP --------------------------------------------------------->
-<div id="lvup-popup">
-  <div class="lvup-box">
-    <div class="lvup-ttl">LEVEL UP</div>
-    <div class="lvup-sub" id="lv-sub">NOW LEVEL 2</div>
-    <div class="lvup-pts" id="lv-pts">5 points to spend</div>
-    <div id="stat-rows"></div>
-    <button class="btn-p" onclick="LvUp.confirm()" id="lv-confirm">Confirm</button>
-  </div>
-</div>
-
 <!-- ═══════════════════════════════════════════════════════════════════════
      GAME WORLD
 ════════════════════════════════════════════════════════════════════════ -->
@@ -112,7 +101,7 @@
 
     <!-- HUD top-left: level, name, bars -->
     <div id="hud">
-  <div class="h-top">
+  <div class="h-top" onclick="UI.showStatPanel()" ontouchstart="UI.showStatPanel()" style="cursor:pointer" title="View Stats">
     <span class="lv-b" id="lv-b">Lv 1</span>
     <span class="h-nm" id="h-nm">Wanderer</span>
   </div>
@@ -191,13 +180,52 @@
       <div class="sk" id="sk1" ontouchstart="Combat.skill(1)" onclick="Combat.skill(1)"><span class="sknm" id="sn1"></span><span id="si1">✦</span><span class="cdt" id="cd1"></span></div>
       <div class="sk" id="sk2" ontouchstart="Combat.skill(2)" onclick="Combat.skill(2)"><span class="sknm" id="sn2"></span><span id="si2">💥</span><span class="cdt" id="cd2"></span></div>
       <div class="sk" id="sk3" ontouchstart="Combat.skill(3)" onclick="Combat.skill(3)"><span class="sknm" id="sn3"></span><span id="si3">🌀</span><span class="cdt" id="cd3"></span></div>
+      <!-- Manual attack button -->
+      <div class="sk sk-attack" id="sk-atk" ontouchstart="Combat.manualAttack()" onclick="Combat.manualAttack()">
+        <span class="sknm">ATTACK</span>
+        <span>⚔</span>
+        <span class="cdt" id="cd-atk"></span>
+      </div>
     </div>
 
-    <!-- Right action buttons -->
-    <div id="act-r">
-      <div class="act-b" ontouchstart="UI.toggleInv()" onclick="UI.toggleInv()">🎒</div>
-      <div class="act-b" ontouchstart="UI.toggleQ()" onclick="UI.toggleQ()">📜</div>
-      <div class="act-b" ontouchstart="UI.toggleWpn()" onclick="UI.toggleWpn()">⚔️</div>
+    <!-- Menu button (top right) -->
+    <div id="menu-btn" onclick="UI.toggleMenu()" ontouchstart="UI.toggleMenu()">
+      MENU
+      <span id="stat-point-dot"></span>
+    </div>
+
+    <!-- Hamburger menu panel -->
+    <div id="menu-panel">
+      <div class="menu-panel-item" onclick="UI.openCharacterMenu()" ontouchstart="UI.openCharacterMenu()">
+        👤 Character
+        <span id="menu-stat-dot" class="menu-red-dot"></span>
+      </div>
+      <div class="menu-panel-item" onclick="UI.toggleInv(); UI.closeMenu()" ontouchstart="UI.toggleInv(); UI.closeMenu()">
+        🎒 Inventory
+      </div>
+      <div class="menu-panel-item" onclick="UI.toggleWpn(); UI.closeMenu()" ontouchstart="UI.toggleWpn(); UI.closeMenu()">
+        ⚔️ Weapon Mastery
+      </div>
+      <div class="menu-panel-item menu-logout" onclick="UI.logout()" ontouchstart="UI.logout()">
+        🚪 Log Out
+      </div>
+    </div>
+
+    <!-- Character submenu panel -->
+    <div id="character-menu-panel">
+      <div class="pnl-box">
+        <div class="pnl-hdr">
+          <span>⟨ CHARACTER ⟩</span>
+          <span class="pnl-x" onclick="UI.closeCharacterMenu()" ontouchstart="UI.closeCharacterMenu()">✕</span>
+        </div>
+        <div class="character-menu-btn" onclick="UI.openStatsFromCharMenu()" ontouchstart="UI.openStatsFromCharMenu()">
+          📊 Stats
+          <span id="char-menu-stat-dot" class="menu-red-dot"></span>
+        </div>
+        <div class="character-menu-btn" onclick="UI.openEquipFromCharMenu()" ontouchstart="UI.openEquipFromCharMenu()">
+          🥋 Equipment
+        </div>
+      </div>
     </div>
 
     <!-- Voice chat -->
@@ -271,6 +299,86 @@
 
   <!-- Right half: camera rotation drag area -->
   <div id="cam-rotate-zone"></div>
+
+  <!-- Stat panel — lives outside #ui so it's never hidden by the ui.hidden class -->
+  <div id="stat-panel" onclick="if(event.target===this)UI.closeStatPanel()" ontouchstart="if(event.target===this)UI.closeStatPanel()">
+    <div class="pnl-box stat-panel-box">
+      <div class="pnl-hdr">
+        <span>⟨ CHARACTER STATS ⟩</span>
+        <span class="pnl-x" onclick="UI.closeStatPanel()" ontouchstart="UI.closeStatPanel()">✕</span>
+      </div>
+
+      <div class="stat-panel-namerow">
+        <span class="stat-panel-lv" id="sp-lv">Lv 1</span>
+        <span class="stat-panel-name" id="sp-nm">Wanderer</span>
+      </div>
+
+      <!-- Two-column body -->
+      <div class="stat-panel-body">
+
+        <!-- LEFT: vitals + combat grid + stat points -->
+        <div class="stat-panel-left">
+          <div class="stat-panel-section-label">VITALS</div>
+          <div class="stat-panel-vital">
+            <div class="stat-panel-vital-label">MaxHP</div>
+            <div class="stat-panel-vital-val" id="sp-maxhp">200</div>
+            <div class="stat-panel-vital-bar-wrap">
+              <div class="stat-panel-vital-bar hp-bar" id="sp-hp-bar"></div>
+            </div>
+          </div>
+          <div class="stat-panel-vital">
+            <div class="stat-panel-vital-label">MaxSP</div>
+            <div class="stat-panel-vital-val" id="sp-maxsp">100</div>
+            <div class="stat-panel-vital-bar-wrap">
+              <div class="stat-panel-vital-bar sp-bar" id="sp-sp-bar"></div>
+            </div>
+          </div>
+
+          <div class="stat-panel-section-label">COMBAT</div>
+          <div class="stat-panel-combat-grid">
+            <div class="stat-panel-combat-row">
+              <span class="stat-panel-combat-key">ATK</span><span class="stat-panel-combat-val" id="sp-atk">0</span>
+              <span class="stat-panel-combat-key">HIT</span><span class="stat-panel-combat-val" id="sp-hit">0</span>
+            </div>
+            <div class="stat-panel-combat-row">
+              <span class="stat-panel-combat-key">MATK</span><span class="stat-panel-combat-val" id="sp-matk">0</span>
+              <span class="stat-panel-combat-key">EVA</span><span class="stat-panel-combat-val" id="sp-eva">0</span>
+            </div>
+            <div class="stat-panel-combat-row">
+              <span class="stat-panel-combat-key">DEF</span><span class="stat-panel-combat-val" id="sp-def">0</span>
+              <span class="stat-panel-combat-key">ASPD</span><span class="stat-panel-combat-val" id="sp-aspd">0</span>
+            </div>
+            <div class="stat-panel-combat-row">
+              <span class="stat-panel-combat-key">MDEF</span><span class="stat-panel-combat-val" id="sp-mdef">0</span>
+              <span class="stat-panel-combat-key">CSPD</span><span class="stat-panel-combat-val" id="sp-cspd">0</span>
+            </div>
+          </div>
+
+          <div class="stat-panel-pts-row">
+            <span class="stat-panel-pts-label">Stat Points</span>
+            <span class="stat-panel-pts-val" id="sp-pts">0</span>
+          </div>
+
+          <div class="stat-panel-gold-row">
+            <span>🪙 Gold</span>
+            <span id="sp-gold">0</span>
+          </div>
+        </div>
+
+        <!-- RIGHT: core stats with bars + distribution buttons -->
+        <div class="stat-panel-right">
+          <div class="stat-panel-section-label">BASE STATS</div>
+          <div id="stat-panel-core-rows"></div>
+          <!-- Confirm/Cancel shown only when there are pending point changes -->
+          <div id="stat-dist-actions" style="display:none">
+            <button class="stat-dist-confirm" onclick="StatDist.confirm()" ontouchstart="StatDist.confirm()">✓ Confirm</button>
+            <button class="stat-dist-cancel"  onclick="StatDist.cancel()"  ontouchstart="StatDist.cancel()">✕ Reset</button>
+          </div>
+        </div>
+
+      </div><!-- /.stat-panel-body -->
+    </div>
+  </div>
 
 </div><!-- /#s-game -->
 

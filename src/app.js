@@ -132,7 +132,7 @@ const WTYPES = {
 };
 
 const DATA = {
-  /*enemies: {
+  enemies: {
     draugr:     { name:'Draugr',       hp:80,  def:4,  atk:10, spd:2.0, xp:25, gold:[8,15],  sz:1.0, shp:'biped',  c:0x445566, type:'armored', aggr:8,  drops:[{i:'wolfsbane',ch:.15}] },
     forestWolf: { name:'Forest Wolf',  hp:55,  def:2,  atk:12, spd:3.5, xp:18, gold:[5,10],  sz:0.9, shp:'wolf',   c:0x5a4a3a, type:'fast',    aggr:9,  drops:[{i:'wolfsbane',ch:.25}] },
     goblin:     { name:'Goblin',       hp:45,  def:1,  atk:8,  spd:3.2, xp:14, gold:[4,9],   sz:0.75,shp:'biped',  c:0x4a7a2a, type:'fast',    aggr:7,  drops:[{i:'hpPotion',ch:.1}]  },
@@ -140,7 +140,7 @@ const DATA = {
     treant:     { name:'Treant',       hp:200, def:8,  atk:20, spd:1.0, xp:70, gold:[25,45], sz:1.5, shp:'biped',  c:0x3a5a1a, type:'armored', aggr:5,  drops:[{i:'leatherArmor',ch:.08}] },
     elderDraugr:{ name:'Elder Draugr', hp:320, def:14, atk:28, spd:2.2, xp:120,gold:[40,70], sz:1.3, shp:'boss',   c:0x334455, type:'armored', aggr:12, boss:true, emoji:'💀',
                   drops:[{i:'chainMail',ch:.15},{i:'steelSword',ch:.1}] },
-  },*/
+  },
 
   floor1: {
     enemies: ['draugr','forestWolf','goblin','darkKnight','treant'],
@@ -817,10 +817,10 @@ const Player = {
       S.lv++;
       S.xpN = Math.floor(100 * Math.pow(1.3, S.lv - 1));
       S.statPts += 5;
-      const lb = document.getElementById('lv-b');
-      if (lb) lb.textContent = 'Lv ' + S.lv;
-      showNotif('🍃 LEVEL UP! Lv.' + S.lv + ' — Spend your stat points!', '#e8c96a');
-      LvUp.show(5);
+      const levelBadgeEl = document.getElementById('lv-b');
+      if (levelBadgeEl) levelBadgeEl.textContent = 'Lv ' + S.lv;
+      showNotif('🍃 LEVEL UP! Lv.' + S.lv + ' — Open Character to spend stat points!', '#e8c96a');
+      UI.updateStatPointDot();
       Save.save();
     }
   }
@@ -984,9 +984,58 @@ const Combat = {
     S.bleedStacks = 0;
     if (PM.group) PM.group.position.set( 15.347, 36.205, 102.491);
     S.target = null;
-    const thud = document.getElementById('thud');
-    if (thud) thud.style.display = 'none';
+    const targetHudEl = document.getElementById('thud');
+    if (targetHudEl) targetHudEl.style.display = 'none';
     showNotif('💀 You fell — returned to the World Tree', '#e74c3c');
+  },
+
+  // Called by the attack button in HUD
+  manualAttack() {
+    if (!PM.group) return;
+    const playerPosition = PM.group.position;
+
+    // If no living target, grab nearest
+    if (!S.target?.alive) {
+      const nearestEnemy = Ens.nearest(playerPosition.x, playerPosition.z, 6);
+      if (!nearestEnemy) { showNotif('No enemy in range', '#e74c3c'); return; }
+      S.target = nearestEnemy;
+      UI.target();
+    }
+
+    if (S.atkCd > 0) { showNotif('⏱ Not ready yet', '#c9a84c'); return; }
+
+    const distanceX = S.target.mesh.position.x - playerPosition.x;
+    const distanceZ = S.target.mesh.position.z - playerPosition.z;
+    const attackRange = WTYPES[S.wtype]?.atkMult > 1.5 ? 2.8 : 3.5;
+
+    if (Math.sqrt(distanceX * distanceX + distanceZ * distanceZ) > attackRange) {
+      showNotif('Too far — move closer', '#e74c3c');
+      return;
+    }
+
+    const attackDamage = Math.floor(S.atk * (0.9 + Math.random() * .2));
+    const attackOptions = {};
+    if (S.wtype === 'dagger' || S.wtype === 'axe') attackOptions.bleed = Math.random() < .2;
+    if (S.wtype === 'mace') attackOptions.stun = .15;
+
+    this.deal(S.target, attackDamage, attackOptions);
+    FX.hit(S.target.mesh.position.clone());
+    PM.playSlash();
+    Game.playSlash();
+
+    if (S.wtype === 'dual') {
+      setTimeout(() => {
+        if (S.target?.alive) {
+          const secondHitDamage = Math.floor(S.atk * (0.9 + Math.random() * .2));
+          this.deal(S.target, secondHitDamage, {});
+          FX.hit(S.target.mesh.position.clone());
+        }
+      }, 120);
+    }
+
+    const attackSpeed = 1.0 / Math.max(.5, S.spd * .18);
+    S.atkCd = attackSpeed;
+    if (Math.random() < .15) Stats.profGain(1);
   }
 };
 
@@ -1143,8 +1192,11 @@ const Ens = {
     FX.floatAt(e.type.xp, '#e8c96a', e.mesh.position);
     if (e.isBoss) {
       S.inBoss = false;
-      const bb = document.getElementById('bossbar');
-      if (bb) bb.style.display = 'none';
+      S.target = null;
+      const bossBarEl = document.getElementById('bossbar');
+      if (bossBarEl) bossBarEl.style.display = 'none';
+      const targetHudEl = document.getElementById('thud');
+      if (targetHudEl) targetHudEl.style.display = 'none';
       setTimeout(() => onBossDefeated(), 1500);
     } else {
       setTimeout(() => {
@@ -1189,18 +1241,9 @@ const Ens = {
         else if (dist > e.aggrR * 2.8) { e.state = 'idle'; e.idleT = rnd(.8, 2); }
         else { e.mesh.position.x += dx/dist*e.type.spd*dt; e.mesh.position.z += dz/dist*e.type.spd*dt; e.mesh.rotation.y = Math.atan2(dx, dz); }
       } else {
+        // Enemies chase the player but do NOT auto-attack — player attacks manually
         if (inSafe || dist > e.atkR * 1.8) { e.state = 'chase'; return; }
-        e.atkCd -= dt;
-        if (e.atkCd <= 0) {
-          e.atkCd = 1.5 + Math.random() * .8;
-          if (S.iF <= 0) {
-            const dmg = Math.max(1, Math.floor(e.type.atk * (0.8 + Math.random() * .4)) - S.def);
-            S.hp = Math.max(0, S.hp - dmg);
-            FX.floatAt(dmg, '#e74c3c', { x:px, y:0, z:pz });
-            S.iF = .5;
-            if (S.hp <= 0) Combat.death();
-          }
-        }
+        // Just stay in attack range, wobble/idle in place — no damage dealt
       }
       e.wobble += dt * 2.5;
       const bc = e.mesh.children[0];
@@ -1664,23 +1707,273 @@ const UI = {
   },
 
   showStatPanel() {
-    const p = document.getElementById('stat-panel');
-    if (!p) return;
-    p.classList.add('open');
-    const rows = document.getElementById('stat-panel-rows');
-    if (!rows) return;
-    rows.innerHTML = [
-      ['STR', S.str], ['AGI', S.agi], ['VIT', S.vit], ['DEX', S.dex],
-      ['ATK', S.atk], ['DEF', S.def], ['SPD', S.spd.toFixed(1)],
-      ['CRIT', (S.crit * 100).toFixed(1) + '%'],
-      ['Gold', S.gold + '🪙'],
-    ].map(([k, v]) => `<div class="stat-panel-row"><span>${k}</span><span class="stat-panel-val">${v}</span></div>`).join('');
+    const panel = document.getElementById('stat-panel');
+    if (!panel) return;
+    panel.classList.add('open');
+
+    // Recalculate derived stats before showing
+    Stats.recalc();
+
+    // Level & name
+    const levelBadge = document.getElementById('sp-lv');
+    const nameLabel  = document.getElementById('sp-nm');
+    if (levelBadge) levelBadge.textContent = 'Lv ' + S.lv;
+    if (nameLabel)  nameLabel.textContent  = S.user || 'Wanderer';
+
+    // MaxHP bar
+    const maxHpLabel = document.getElementById('sp-maxhp');
+    const hpBar      = document.getElementById('sp-hp-bar');
+    if (maxHpLabel) maxHpLabel.textContent = S.maxHp;
+    if (hpBar)      hpBar.style.width      = (S.hp / S.maxHp * 100) + '%';
+
+    // MaxSP bar
+    const maxSpLabel = document.getElementById('sp-maxsp');
+    const spBar      = document.getElementById('sp-sp-bar');
+    if (maxSpLabel) maxSpLabel.textContent = S.maxSp;
+    if (spBar)      spBar.style.width      = (S.sp / S.maxSp * 100) + '%';
+
+    // Derived combat stats
+    // ASPD: attack speed (1-100 scale based on spd 1..6)
+    const attackSpeed     = Math.min(100, Math.round(((S.spd - 1) / 5) * 100));
+    // CSPD: cast / skill speed (dex-based, 1-100 scale)
+    const castSpeed       = Math.min(100, Math.round(50 + S.dex * 2));
+    // HIT: base hit chance percent
+    const hitChance       = Math.min(100, Math.round(50 + S.dex * 1.5 + S.agi * 0.5));
+    // EVA: evasion
+    const evasion         = Math.min(100, Math.round(S.agi * 2 + S.dex * 0.5));
+    // MATK: magic attack (INT-based)
+    const magicAttack     = Math.floor((S.int || 1) * 3 + S.lv * 0.5);
+    // MDEF: magic defense
+    const magicDefense    = Math.floor(1 + (S.int || 1) * 0.3 + S.vit * 0.2);
+
+    const atkLabel  = document.getElementById('sp-atk');
+    const matkLabel = document.getElementById('sp-matk');
+    const defLabel  = document.getElementById('sp-def');
+    const mdefLabel = document.getElementById('sp-mdef');
+    const hitLabel  = document.getElementById('sp-hit');
+    const evaLabel  = document.getElementById('sp-eva');
+    const aspdLabel = document.getElementById('sp-aspd');
+    const cspdLabel = document.getElementById('sp-cspd');
+
+    if (atkLabel)  atkLabel.textContent  = S.atk;
+    if (matkLabel) matkLabel.textContent = magicAttack;
+    if (defLabel)  defLabel.textContent  = S.def;
+    if (mdefLabel) mdefLabel.textContent = magicDefense;
+    if (hitLabel)  hitLabel.textContent  = hitChance;
+    if (evaLabel)  evaLabel.textContent  = evasion;
+    if (aspdLabel) aspdLabel.textContent = attackSpeed;
+    if (cspdLabel) cspdLabel.textContent = castSpeed;
+
+    // Stat points
+    const statPointsLabel = document.getElementById('sp-pts');
+    if (statPointsLabel) statPointsLabel.textContent = S.statPts || 0;
+
+    // Core stats with bars + distribution buttons (max bar = 200 for visual scale)
+    const CORE_STAT_MAX = 200;
+    const distributionStats = [
+      { key: 'str', label: 'STR', value: S.str, distributable: true },
+      { key: 'agi', label: 'AGI', value: S.agi, distributable: true },
+      { key: 'vit', label: 'VIT', value: S.vit, distributable: true },
+      { key: 'dex', label: 'DEX', value: S.dex, distributable: true },
+      { key: 'int', label: 'INT', value: S.int || 1, distributable: false },
+      { key: 'crt', label: 'CRT', value: Math.round(S.crit * 100), distributable: false },
+    ];
+
+    const totalPendingSpent = Object.values(StatDist.pendingChanges).reduce((sum, val) => sum + val, 0);
+    const remainingPoints   = (S.statPts || 0) - totalPendingSpent;
+
+    const coreRowsContainer = document.getElementById('stat-panel-core-rows');
+    if (coreRowsContainer) {
+      coreRowsContainer.innerHTML = distributionStats.map(stat => {
+        const pendingAmount = StatDist.pendingChanges[stat.key] || 0;
+        const displayValue  = stat.value + pendingAmount;
+        const barWidth      = Math.min(100, Math.round((displayValue / CORE_STAT_MAX) * 100));
+        const pendingLabel  = pendingAmount > 0 ? ` <span class="stat-dist-pending">+${pendingAmount}</span>` : '';
+
+        if (!stat.distributable) {
+          return `
+            <div class="stat-panel-core-row">
+              <span class="stat-panel-core-key">${stat.label}</span>
+              <div class="stat-panel-core-bar-wrap">
+                <div class="stat-panel-core-bar" style="width:${barWidth}%"></div>
+              </div>
+              <span class="stat-panel-core-val">${displayValue}</span>
+            </div>`;
+        }
+
+        return `
+          <div class="stat-panel-core-row stat-dist-row">
+            <span class="stat-panel-core-key">${stat.label}</span>
+            <div class="stat-panel-core-bar-wrap">
+              <div class="stat-panel-core-bar" style="width:${barWidth}%"></div>
+            </div>
+            <span class="stat-panel-core-val">${displayValue}${pendingLabel}</span>
+            <button class="stat-dist-btn stat-dist-minus"
+              onclick="StatDist.add('${stat.key}', -1)"
+              ontouchstart="StatDist.add('${stat.key}', -1)"
+              ${pendingAmount <= 0 ? 'disabled' : ''}>−</button>
+            <button class="stat-dist-btn stat-dist-plus"
+              onclick="StatDist.add('${stat.key}', 1)"
+              ontouchstart="StatDist.add('${stat.key}', 1)"
+              ${remainingPoints <= 0 ? 'disabled' : ''}>+</button>
+          </div>`;
+      }).join('');
+    }
+
+    // Show confirm/cancel only if there are pending changes
+    const distributionActionsContainer = document.getElementById('stat-dist-actions');
+    if (distributionActionsContainer) {
+      if (totalPendingSpent > 0) {
+        distributionActionsContainer.style.display = 'flex';
+      } else {
+        distributionActionsContainer.style.display = 'none';
+      }
+    }
+
+    // Gold
+    const goldLabel = document.getElementById('sp-gold');
+    if (goldLabel) goldLabel.textContent = S.gold + ' 🪙';
+  },
+
+  closeStatPanel() {
+    const panel = document.getElementById('stat-panel');
+    if (panel) panel.classList.remove('open');
+  },
+
+  // ── Stat point red dot indicator ────────────────────────────
+  updateStatPointDot() {
+    const hasPoints = (S.statPts || 0) > 0;
+    const dotDisplay = hasPoints ? 'block' : 'none';
+    // Dot on the menu button itself
+    const menuButtonDot = document.getElementById('stat-point-dot');
+    if (menuButtonDot) menuButtonDot.style.display = dotDisplay;
+    // Dot inside the hamburger menu on "Character" row
+    const menuCharDot = document.getElementById('menu-stat-dot');
+    if (menuCharDot) menuCharDot.style.display = dotDisplay;
+    // Dot inside the character submenu on "Stats" row
+    const charMenuStatDot = document.getElementById('char-menu-stat-dot');
+    if (charMenuStatDot) charMenuStatDot.style.display = dotDisplay;
+  },
+
+  // ── Menu (hamburger → Character / Inventory / Log Out) ──────
+  toggleMenu() {
+    const menuPanel = document.getElementById('menu-panel');
+    if (!menuPanel) return;
+    menuPanel.classList.toggle('open');
+  },
+
+  closeMenu() {
+    const menuPanel = document.getElementById('menu-panel');
+    if (menuPanel) menuPanel.classList.remove('open');
+  },
+
+  openCharacterMenu() {
+    this.closeMenu();
+    const characterMenuPanel = document.getElementById('character-menu-panel');
+    if (characterMenuPanel) characterMenuPanel.classList.add('open');
+  },
+
+  closeCharacterMenu() {
+    const characterMenuPanel = document.getElementById('character-menu-panel');
+    if (characterMenuPanel) characterMenuPanel.classList.remove('open');
+  },
+
+  openStatsFromCharMenu() {
+    this.closeCharacterMenu();
+    this.showStatPanel();
+  },
+
+  openEquipFromCharMenu() {
+    this.closeCharacterMenu();
+    this.toggleInv();
+  },
+
+  logout() {
+    this.closeMenu();
+    if (fbOK && fbAuth.currentUser) {
+      fbAuth.signOut().then(() => { localStorage.removeItem('ygg_save_v1'); location.reload(); });
+    } else {
+      localStorage.removeItem('ygg_save_v1');
+      location.reload();
+    }
+  },
+
+  toggleWpn() {
+    const weaponPanel = document.getElementById('wpn-panel');
+    if (!weaponPanel) return;
+    const isOpen = weaponPanel.classList.toggle('open');
+    if (!isOpen) return;
+    const proficiencyList = document.getElementById('prof-list');
+    if (!proficiencyList) return;
+    proficiencyList.innerHTML = Object.entries(WTYPES).map(([weaponKey, weaponData]) => {
+      const proficiencyValue = S.prof[weaponKey] || 0;
+      const proficiencyPercent = Math.min(100, Math.round((proficiencyValue / 1000) * 100));
+      const unlockedSkills = weaponData.skills.filter(skill => skill.unlock <= proficiencyValue);
+      return `
+        <div class="prof-row">
+          <div class="prof-top">
+            <span class="prof-ico">${weaponData.icon}</span>
+            <span class="prof-name">${weaponData.name}</span>
+            <span class="prof-val">${proficiencyValue}/1000</span>
+          </div>
+          <div class="prof-bar-wrap"><div class="prof-bar" style="width:${proficiencyPercent}%"></div></div>
+          <div class="prof-skills">${unlockedSkills.map(skill => `<span class="prof-skill">${skill.icon} ${skill.name}</span>`).join('')}</div>
+        </div>`;
+    }).join('');
+  },
+
+  toggleQ() {
+    const questPanel = document.getElementById('quest-panel');
+    if (questPanel) questPanel.classList.toggle('open');
   }
 };
 
 // ─────────────────────────────────────────────────────────────
-//  GAME WORLD (preserves existing renderer, sky, town GLB)
+//  STAT DISTRIBUTION  (used inside the stat panel)
 // ─────────────────────────────────────────────────────────────
+const StatDist = {
+  // Tracks pending points not yet confirmed
+  pendingChanges: { str: 0, agi: 0, vit: 0, dex: 0 },
+
+  add(statKey, amount) {
+    const totalSpent = Object.values(this.pendingChanges).reduce((sum, val) => sum + val, 0);
+    const remainingPoints = (S.statPts || 0) - totalSpent;
+
+    if (amount > 0 && remainingPoints <= 0) {
+      showNotif('No stat points remaining', '#e74c3c');
+      return;
+    }
+    if (amount < 0 && this.pendingChanges[statKey] <= 0) return;
+
+    this.pendingChanges[statKey] += amount;
+    UI.showStatPanel(); // re-render to reflect changes live
+  },
+
+  confirm() {
+    const totalSpent = Object.values(this.pendingChanges).reduce((sum, val) => sum + val, 0);
+    if (totalSpent <= 0) return;
+
+    // Apply pending changes to game state
+    Object.entries(this.pendingChanges).forEach(([statKey, amount]) => {
+      if (amount > 0) S[statKey] = (S[statKey] || 0) + amount;
+    });
+
+    S.statPts -= totalSpent;
+    this.pendingChanges = { str: 0, agi: 0, vit: 0, dex: 0 };
+
+    Stats.recalc();
+    Stats.updateSkillButtons();
+    UI.updateStatPointDot();
+    Save.save();
+    UI.showStatPanel(); // refresh display
+    showNotif('Stats updated!', '#4caf50');
+  },
+
+  cancel() {
+    this.pendingChanges = { str: 0, agi: 0, vit: 0, dex: 0 };
+    UI.showStatPanel();
+  }
+};
 const Game = {
   playSlash() {
   if (!this._mixer || !this._slashAction) return;
@@ -1722,19 +2015,20 @@ const Game = {
   _joystick:  { x:0, y:0 },
 
   init() {
-  const sg = document.getElementById('s-game');
-    if (sg) sg.style.display = 'block';
+  const gameScreen = document.getElementById('s-game');
+    if (gameScreen) gameScreen.style.display = 'block';
 
   // Update HUD
-  const lb = document.getElementById('lv-b');
-    if (lb) lb.textContent = 'Lv ' + S.lv;
-  const hn2 = document.getElementById('h-nm');
-    if (hn2) hn2.textContent = S.user;
-  const wt = document.getElementById('wt-txt');
-    if (wt) wt.textContent = WTYPES[S.wtype]?.name || 'Long Sword';
+  const levelBadge = document.getElementById('lv-b');
+    if (levelBadge) levelBadge.textContent = 'Lv ' + S.lv;
+  const characterName = document.getElementById('h-nm');
+    if (characterName) characterName.textContent = S.user;
+  const weaponTypeLabel = document.getElementById('wt-txt');
+    if (weaponTypeLabel) weaponTypeLabel.textContent = WTYPES[S.wtype]?.name || 'Long Sword';
 
   Stats.recalc();
   Stats.updateSkillButtons();
+  UI.updateStatPointDot();
 
   this._loadedAssets = 0;
   this._loadTimeout = setTimeout(() => {
@@ -1996,7 +2290,7 @@ this._town.traverse(child => {
     const snapInterval = setInterval(() => {
   if (PM.group) {
     clearInterval(snapInterval);
-    PPM.group.position.set(0, 50, 0);
+    PM.group.position.set(0, 50, 0);
 this._snapToTerrain(PM.group, true);
     if (this._char) {
       this._char.position.copy(PM.group.position);
@@ -2237,35 +2531,25 @@ const dz = (-iz * cos + ix * sin) * S.spd * dt;
       if (sb) sb.style.display = inSafeNow ? 'block' : 'none';
     }
 
-    // Auto target
+    // Auto target nearest enemy (no auto attack — player attacks manually)
     if (!S.target?.alive) {
-      const nb = inSafeNow ? null : Ens.nearest(pg.position.x, pg.position.z);
-      if (nb) { S.target = nb; UI.target(); }
+      const nearestEnemy = inSafeNow ? null : Ens.nearest(pg.position.x, pg.position.z);
+      if (nearestEnemy) { S.target = nearestEnemy; UI.target(); }
       else if (S.target) { S.target = null; UI.target(); }
     }
 
-    // Auto melee
-    if (S.atkCd > 0) S.atkCd -= dt;
-    if (!inSafeNow && S.target?.alive && S.atkCd <= 0) {
-      const dx = S.target.mesh.position.x - pg.position.x;
-      const dz = S.target.mesh.position.z - pg.position.z;
-      const atkRange = WTYPES[S.wtype]?.atkMult > 1.5 ? 2.8 : 3.2;
-      if (Math.sqrt(dx*dx + dz*dz) < atkRange) {
-        const dmg = Math.floor(S.atk * (0.9 + Math.random() * .2));
-        const opts = {};
-        if (S.wtype === 'dagger' || S.wtype === 'axe') opts.bleed = Math.random() < .2;
-        if (S.wtype === 'mace') opts.stun = .15;
-        Combat.deal(S.target, dmg, opts);
-        FX.hit(S.target.mesh.position.clone());
-        Game.playSlash();
-        if (S.wtype === 'dual') {
-          setTimeout(() => {
-            if (S.target?.alive) { const d2 = Math.floor(S.atk * (0.9 + Math.random() * .2)); Combat.deal(S.target, d2, {}); FX.hit(S.target.mesh.position.clone()); }
-          }, 120);
-        }
-        const atkSpd = 1.0 / Math.max(.5, S.spd * .18);
-        S.atkCd = atkSpd;
-        if (Math.random() < .15) Stats.profGain(1);
+    // Attack cooldown tick (used by manual attack button)
+    if (S.atkCd > 0) {
+      S.atkCd -= dt;
+      const attackCooldownEl = document.getElementById('cd-atk');
+      const attackButtonEl   = document.getElementById('sk-atk');
+      if (S.atkCd > 0) {
+        if (attackCooldownEl) attackCooldownEl.textContent = Math.ceil(S.atkCd);
+        if (attackButtonEl)   attackButtonEl.classList.add('oncd');
+      } else {
+        S.atkCd = 0;
+        if (attackCooldownEl) attackCooldownEl.textContent = '';
+        if (attackButtonEl)   attackButtonEl.classList.remove('oncd');
       }
     }
 
