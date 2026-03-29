@@ -112,21 +112,20 @@
 
     <!-- HUD top-left: level, name, bars -->
     <div id="hud">
-      <div class="h-top">
-        <span class="lv-b" id="lv-b">Lv 1</span>
-        <span class="h-nm" id="h-nm">Wanderer</span>
-      </div>
-      <div class="br"><div class="bl"><span>HP</span><span id="hp-t">200/200</span></div><div class="bw"><div class="bf" id="hp-f" style="width:100%"></div></div></div>
-      <div class="br"><div class="bl"><span>SP</span><span id="sp-t">100/100</span></div><div class="bw"><div class="bf" id="sp-f" style="width:100%"></div></div></div>
-      <div class="br"><div class="bl"><span>XP</span><span id="xp-t">0/100</span></div><div class="bw"><div class="bf" id="xp-f"></div></div></div>
-    </div>
+  <div class="h-top">
+    <span class="lv-b" id="lv-b">Lv 1</span>
+    <span class="h-nm" id="h-nm">Wanderer</span>
+  </div>
+  <div class="hud-bars">
+    <div class="br"><div class="bl"><span>HP</span><span id="hp-t">200/200</span></div><div class="bw"><div class="bf" id="hp-f" style="width:100%"></div></div></div>
+    <div class="br"><div class="bl"><span>SP</span><span id="sp-t">100/100</span></div><div class="bw"><div class="bf" id="sp-f" style="width:100%"></div></div></div>
+    <div class="br"><div class="bl"><span>XP</span><span id="xp-t">0/100</span></div><div class="bw"><div class="bf" id="xp-f"></div></div></div>
+  </div>
+</div>
 
     <!-- Weapon type & gold indicators -->
     <div id="wtype">⚔️ <span id="wt-txt">1-H Sword</span></div>
     <div id="gold-d">🪙 <span id="gold-t">0</span></div>
-
-    <!-- Floor indicator -->
-    <div id="floor-d">FLOOR <span id="fl-n">1</span> — <span id="fl-nm">Midgard</span></div>
 
     <!-- Safe zone indicator -->
     <div id="safe-b">✦ SAFE ZONE</div>
@@ -146,7 +145,7 @@
 
     <!-- Minimap -->
     <div id="mm">
-      <canvas id="mm-c" width="84" height="84"></canvas>
+      <canvas id="mm-c" width="100" height="100"></canvas>
       <div class="mm-l" id="mm-l">MIDGARD</div>
     </div>
 
@@ -245,13 +244,13 @@
       </div>
     </div>
 
-    <!-- Quest log panel -->
+    <!-- Quest log panel
     <div id="quest-panel">
       <div class="pnl-box">
         <div class="pnl-hdr"><span>⟨ QUEST LOG ⟩</span><span class="pnl-x" ontouchstart="UI.toggleQ()" onclick="UI.toggleQ()">✕</span></div>
         <div id="quest-list"></div>
       </div>
-    </div>
+    </div> -->
 
   </div><!-- /#ui -->
 

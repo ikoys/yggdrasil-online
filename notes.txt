@@ -8,3 +8,5 @@ location spawn             this._char.position.set
                         const dz = (ix * sin + iz * cos) * S.spd * dt;
 town scale               const s = (300 / rawSpan) * this.TOWN_SCALE;
 excluding meshes        this._terrainMeshes = [];
+shaky screen            this._camera.position.x = THREE.MathUtils.lerp(this._camera.position.x, tx, 1.0);
+console location        console.log('X:', Game._char?.position.x.toFixed(2), 'Y:', Game._char?.position.y.toFixed(2), 'Z:', Game._char?.position.z.toFixed(2));

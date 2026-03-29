@@ -132,7 +132,7 @@ const WTYPES = {
 };
 
 const DATA = {
-  /*enemies: {
+  enemies: {
     draugr:     { name:'Draugr',       hp:80,  def:4,  atk:10, spd:2.0, xp:25, gold:[8,15],  sz:1.0, shp:'biped',  c:0x445566, type:'armored', aggr:8,  drops:[{i:'wolfsbane',ch:.15}] },
     forestWolf: { name:'Forest Wolf',  hp:55,  def:2,  atk:12, spd:3.5, xp:18, gold:[5,10],  sz:0.9, shp:'wolf',   c:0x5a4a3a, type:'fast',    aggr:9,  drops:[{i:'wolfsbane',ch:.25}] },
     goblin:     { name:'Goblin',       hp:45,  def:1,  atk:8,  spd:3.2, xp:14, gold:[4,9],   sz:0.75,shp:'biped',  c:0x4a7a2a, type:'fast',    aggr:7,  drops:[{i:'hpPotion',ch:.1}]  },
@@ -140,7 +140,7 @@ const DATA = {
     treant:     { name:'Treant',       hp:200, def:8,  atk:20, spd:1.0, xp:70, gold:[25,45], sz:1.5, shp:'biped',  c:0x3a5a1a, type:'armored', aggr:5,  drops:[{i:'leatherArmor',ch:.08}] },
     elderDraugr:{ name:'Elder Draugr', hp:320, def:14, atk:28, spd:2.2, xp:120,gold:[40,70], sz:1.3, shp:'boss',   c:0x334455, type:'armored', aggr:12, boss:true, emoji:'💀',
                   drops:[{i:'chainMail',ch:.15},{i:'steelSword',ch:.1}] },
-  },*/
+  },
 
   floor1: {
     enemies: ['draugr','forestWolf','goblin','darkKnight','treant'],
@@ -971,17 +971,18 @@ const Combat = {
       this.deal(S.target, baseD, opts);
       showNotif(sk.icon + ' ' + sk.name, '#c9a84c');
     }
-    if (sk.name === 'Starburst') showNotif('🌟 STARBURST STREAM! 16-HIT BURST!', '#ffd700');
+    if (sk.name === 'Starburst') showNotif('🌟 STARBURST STREAM! 16-HIT BURST! rawwwrrr', '#fa00ed');
     S.scd[i] = sk.cd;
     const btn = document.getElementById('sk' + i);
     if (btn) btn.classList.add('oncd');
     PM.playSlash();
+    Game.playSlash();
   },
 
   death() {
     S.hp = Math.floor(S.maxHp * .4);
     S.bleedStacks = 0;
-    if (PM.group) PM.group.position.set(0, 0, 0);
+    if (PM.group) PM.group.position.set( 15.347, 36.205, 102.491);
     S.target = null;
     const thud = document.getElementById('thud');
     if (thud) thud.style.display = 'none';
@@ -1371,11 +1372,17 @@ const PM = {
   rebuildWeapon() { /* weapons are bone-attached; no rebuild needed */ },
 
   playSlash() {
-    if (!this.mixer) return;
-    this.play('slash', 0.1);
-    const dur = (this.clips.slash?.duration || 1) * 1000;
-    setTimeout(() => { this._curAnim = ''; this.play('idle', 0.2); }, dur * 0.9);
-  },
+  if (!this._mixer || !this._slashAction) return;
+  console.log('[YGG] playSlash called');
+  this._slashAction.reset().play();
+  this._curCharAnim = 'slash';
+  const dur = (this._slashAction.getClip().duration || 0.8) * 1000;
+  setTimeout(() => {
+    this._slashAction.stop();
+    this._curCharAnim = 'idle';
+    if (this._idleAction) this._idleAction.reset().play();
+  }, dur * 0.9);
+},
 
   update(dt, mv) {
     if (!this.group) return;
@@ -1659,6 +1666,17 @@ const UI = {
 //  GAME WORLD (preserves existing renderer, sky, town GLB)
 // ─────────────────────────────────────────────────────────────
 const Game = {
+  playSlash() {
+  if (!this._mixer || !this._slashAction) return;
+  this._slashAction.reset().play();
+  this._curCharAnim = 'slash';
+  const dur = (this._slashAction.getClip().duration || 0.8) * 1000;
+  setTimeout(() => {
+    this._slashAction.stop();
+    this._curCharAnim = 'idle';
+    if (this._idleAction) this._idleAction.reset().play();
+  }, dur * 0.9);
+},
   CHAR_SCALE : 1.0,
   TOWN_SCALE : 1.0,
   MOVE_SPEED : 30.0,
@@ -1689,15 +1707,15 @@ const Game = {
 
   init() {
   const sg = document.getElementById('s-game');
-  if (sg) sg.style.display = 'block';
+    if (sg) sg.style.display = 'block';
 
   // Update HUD
   const lb = document.getElementById('lv-b');
-  if (lb) lb.textContent = 'Lv ' + S.lv;
+    if (lb) lb.textContent = 'Lv ' + S.lv;
   const hn2 = document.getElementById('h-nm');
-  if (hn2) hn2.textContent = S.user;
+    if (hn2) hn2.textContent = S.user;
   const wt = document.getElementById('wt-txt');
-  if (wt) wt.textContent = WTYPES[S.wtype]?.name || 'Long Sword';
+    if (wt) wt.textContent = WTYPES[S.wtype]?.name || 'Long Sword';
 
   Stats.recalc();
   Stats.updateSkillButtons();
@@ -1705,10 +1723,10 @@ const Game = {
   this._loadedAssets = 0;
   this._loadTimeout = setTimeout(() => {
     const ol = document.getElementById('loading-overlay');
-    if (ol) { ol.style.opacity = '0'; ol.style.display = 'none'; }
+      if (ol) { ol.style.opacity = '0'; ol.style.display = 'none'; }
     const ui = document.getElementById('ui');
-    if (ui) ui.classList.remove('hidden');
-  }, 30000);
+      if (ui) ui.classList.remove('hidden');
+        }, 30000);
 
   // Setup must happen in this exact order
   this._setupRenderer();   // creates this._scene first
@@ -1725,9 +1743,9 @@ const Game = {
 
   document.addEventListener('keydown', () => {
     const h = document.getElementById('controls-hint');
-    if (h) h.style.opacity = '0';
+      if (h) h.style.opacity = '0';
   }, { once: true });
-},
+    },
 
   // ── Renderer ────────────────────────────────────────────────
   _setupRenderer() {
@@ -1749,14 +1767,14 @@ const Game = {
     this._renderer.toneMappingExposure = 1.25;
 
     let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
+    window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
     this._camera.aspect = innerWidth / innerHeight;
     this._camera.updateProjectionMatrix();
     this._renderer.setSize(innerWidth, innerHeight);
   }, 100);
-});
+  });
   },
 
   // ── Sunset sky (unchanged from original app.js) ─────────────
@@ -1780,7 +1798,7 @@ window.addEventListener('resize', () => {
 
   // 360 sky texture
   // HDR sky
-const rgbeLoader = new THREE.RGBELoader();
+  const rgbeLoader = new THREE.RGBELoader();
 rgbeLoader.load('src/img/sky.hdr', (texture) => {
   texture.mapping = THREE.EquirectangularReflectionMapping;
   this._scene.background = texture;
@@ -1789,6 +1807,7 @@ rgbeLoader.load('src/img/sky.hdr', (texture) => {
 
   // Fog
   this._scene.fog = new THREE.FogExp2(0x87ceeb, 0.003);
+
 },
 
   _addGround() {
@@ -1817,6 +1836,15 @@ rgbeLoader.load('src/img/sky.hdr', (texture) => {
 
  // ── Load character (running.glb) ─────────────────────────────
 _loadCharacter(onDone) {
+  const slashLoader = this._makeLoader();
+slashLoader.load('src/models/slash.glb', (gltf3) => {
+  if (gltf3.animations?.length) {
+    const slashClip = gltf3.animations[0];
+    this._slashAction = this._mixer.clipAction(slashClip);
+    this._slashAction.setLoop(THREE.LoopOnce, 1);
+    this._slashAction.clampWhenFinished = true;
+  }
+}, null, () => { console.warn('[YGG] slash.glb not found'); });
   const loader = this._makeLoader();
   loader.load('src/models/running.glb', (gltf) => {
     this._char = gltf.scene;
@@ -1827,7 +1855,7 @@ _loadCharacter(onDone) {
     const skelH = maxY - minY;
     const finalScale = (skelH > 0.01 ? 1.8 / skelH : 2) * this.CHAR_SCALE;
     this._char.scale.setScalar(finalScale);
-    this._char.position.set(0, 1.535, 0);
+    this._char.position.set(-107.89, 14.64, 92.24); //change PM.group.position.set(0, 0, 0); too
     const skinColor = new THREE.Color(S.skin || '#fff0e6');
     this._char.traverse(child => {
       if (child.isMesh) {
@@ -1838,11 +1866,24 @@ _loadCharacter(onDone) {
     });
     this._scene.add(this._char);
     if (gltf.animations?.length) {
-      this._mixer     = new THREE.AnimationMixer(this._char);
-      this._runAction = this._mixer.clipAction(gltf.animations[0]);
-      this._runAction.play();
-      this._runAction.timeScale = 0;
-    }
+  this._mixer      = new THREE.AnimationMixer(this._char);
+  this._runAction  = this._mixer.clipAction(gltf.animations[0]);
+  this._curCharAnim = 'running';
+  this._runAction.play();
+  this._runAction.timeScale = 0;
+}
+
+// Load idle animation separately
+const idleLoader = this._makeLoader();
+idleLoader.load('src/models/idle.glb', (gltf2) => {
+  if (gltf2.animations?.length) {
+    const idleClip = gltf2.animations[0];
+    this._idleAction = this._mixer.clipAction(idleClip);
+    this._idleAction.play();
+    this._curCharAnim = 'idle';
+    this._runAction.stop();
+  }
+}, null, () => { console.warn('[YGG] idle.glb not found for char'); });
     this._updateCamera(true);
     this._showLoadStep('char');
     if (onDone) onDone();
@@ -2141,14 +2182,29 @@ const dz = (-iz * cos + ix * sin) * S.spd * dt;
 
     // Also move the running.glb char to match PM group position
     if (this._char) {
-      this._char.position.copy(pg.position);
-      this._char.rotation.y = pg.rotation.y;
-      if (this._runAction) {
-        const targetTs = isMoving ? 1.2 : 0.0;
-this._runAction.timeScale = targetTs;
-      }
-      if (this._mixer) this._mixer.update(dt);
+  this._char.position.copy(pg.position);
+  this._char.rotation.y = pg.rotation.y;
+  if (this._mixer) this._mixer.update(dt);
+
+  if (isMoving) {
+    // Switch to running
+    if (this._curCharAnim !== 'running' && this._runAction) {
+      if (this._idleAction) this._runAction.crossFadeFrom(this._idleAction, 0.25, true);
+      this._runAction.reset().play();
+      this._runAction.timeScale = 1.2;
+      if (this._idleAction) this._idleAction.stop();
+      this._curCharAnim = 'running';
     }
+  } else {
+    // Switch to idle
+    if (this._curCharAnim !== 'idle' && this._idleAction) {
+      if (this._runAction) this._idleAction.crossFadeFrom(this._runAction, 0.25, true);
+      this._idleAction.reset().play();
+      this._runAction.timeScale = 0;
+      this._curCharAnim = 'idle';
+    }
+  }
+}
 
     // Stats regen
     S.hp = Math.min(S.maxHp, S.hp + 2 * dt);
@@ -2185,6 +2241,7 @@ this._runAction.timeScale = targetTs;
         if (S.wtype === 'mace') opts.stun = .15;
         Combat.deal(S.target, dmg, opts);
         FX.hit(S.target.mesh.position.clone());
+        Game.playSlash();
         if (S.wtype === 'dual') {
           setTimeout(() => {
             if (S.target?.alive) { const d2 = Math.floor(S.atk * (0.9 + Math.random() * .2)); Combat.deal(S.target, d2, {}); FX.hit(S.target.mesh.position.clone()); }
@@ -2295,9 +2352,6 @@ this._runAction.timeScale = targetTs;
       .h-nm{font-family:var(--font-t);color:var(--gold2);font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .br{margin-bottom:3px}.bl{color:rgba(232,224,200,.48);font-size:8px;margin-bottom:1px;display:flex;justify-content:space-between}
       .bw{width:100%;height:9px;background:rgba(0,0,0,.7);border-radius:2px;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
-      .bf{height:100%;border-radius:2px;transition:width .2s}
-      #hp-f{background:linear-gradient(90deg,#7b1a1a,#c0392b)}
-      #sp-f{background:linear-gradient(90deg,#0d3b5e,#3498db)}
       #xp-f{background:linear-gradient(90deg,#3d2a00,var(--gold));width:0}
       #wtype{position:absolute;top:10px;left:184px;background:var(--hud);border:1px solid var(--border);border-radius:2px;padding:3px 8px;font-family:var(--font-t);font-size:8px;color:var(--gold);white-space:nowrap}
       #gold-d{position:absolute;top:30px;left:184px;background:var(--hud);border:1px solid var(--border);border-radius:2px;padding:3px 8px;font-family:var(--font-t);font-size:8px;color:var(--gold);white-space:nowrap}
@@ -2307,9 +2361,6 @@ this._runAction.timeScale = targetTs;
       #t-hw{width:140px;height:8px;background:rgba(0,0,0,.6);border-radius:2px;overflow:hidden;margin:0 auto}
       #t-hf{height:100%;background:linear-gradient(90deg,#7b1a1a,#e74c3c);width:100%;transition:width .2s}
       #t-type{font-size:8px;color:rgba(232,224,200,.35);font-family:var(--font-t);margin-top:2px;letter-spacing:1px}
-      #mm{position:absolute;top:10px;right:10px;width:84px;height:84px;border:1px solid rgba(201,168,76,.25);border-radius:2px;overflow:hidden}
-      #mm-c{width:100%;height:100%}
-      .mm-l{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-family:var(--font-t);font-size:6px;color:rgba(201,168,76,.35);pointer-events:none}
       #bossbar{position:absolute;top:104px;left:50%;transform:translateX(-50%);display:none;width:260px;text-align:center}
       #boss-nm{font-family:var(--font-t);color:#e74c3c;font-size:9px;font-weight:700;margin-bottom:2px}
       #boss-bw{width:100%;height:11px;background:rgba(0,0,0,.7);border-radius:2px;overflow:hidden;border:1px solid rgba(192,57,43,.25)}
@@ -2340,7 +2391,7 @@ this._runAction.timeScale = targetTs;
       #dual-notice{position:absolute;top:56px;left:50%;transform:translateX(-50%);font-family:var(--font-t);font-size:9px;color:#e88ac4;letter-spacing:2px;background:rgba(120,0,80,.18);border:1px solid rgba(200,100,180,.3);padding:2px 10px;border-radius:2px;display:none;white-space:nowrap}
       #shop-panel,#inv-panel,#stat-panel{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:150;backdrop-filter:blur(4px)}
       #shop-panel.open,#inv-panel.open,#stat-panel.open{display:flex}
-      .pnl-box{background:rgba(4,10,3,.96);border:1px solid var(--border);border-radius:4px;padding:16px;width:min(390px,94vw);max-height:80vh;overflow-y:auto}
+      .pnl-box{background:rgba(4,10,3,.96);border:10px solid var(--border);border-radius:4px;padding:1px;width:min(390px,94vw);max-height:80vh;overflow-y:auto}
       .pnl-hdr{font-family:var(--font-t);color:var(--gold);font-size:11px;letter-spacing:2px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
       .pnl-x{cursor:pointer;color:rgba(201,168,76,.4);font-size:17px;padding:4px;pointer-events:all}
       .sh-item{display:flex;align-items:center;gap:10px;padding:9px 10px;background:rgba(0,0,0,.32);border:1px solid rgba(201,168,76,.12);border-radius:2px;cursor:pointer;transition:.15s;margin-bottom:6px}
@@ -2523,4 +2574,48 @@ this._runAction.timeScale = targetTs;
   // Wire chat Enter key
   const ci = document.getElementById('chat-inp');
   if (ci) ci.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); Chat.send(); } e.stopPropagation(); });
+})();
+
+// DEV MODE — comment this out before going live
+(function devAutoLogin() {
+  const saved = localStorage.getItem('ygg_save_v1');
+  if (saved) {
+    S = JSON.parse(saved);
+  } else {
+    S = {
+      uid: 'dev_test',
+      user: 'DevPlayer',
+      skin: '#d4a882',
+      lv: 10,
+      xp: 0, xpN: 100,
+      hp: 200, maxHp: 200,
+      sp: 100, maxSp: 100,
+      str: 15, agi: 15, vit: 15, dex: 15,
+      statPts: 0,
+      gold: 9999,
+      wtype: '1h',
+      prof: {},
+      bleedStacks: 0, bleedTimer: 0, bleedTarget: null,
+      inv: [
+        { id: 'hpPotion', qty: 10 },
+        { id: 'basicSword', qty: 1 },
+        { id: 'ironSword', qty: 1 },
+        { id: 'leatherArmor', qty: 1 },
+      ],
+      eq: { weapon: null, armor: null, accessory: null },
+      target: null, atkCd: 0, iF: 0, scd: [0,0,0,0],
+      inBoss: false, inSafe: false, chatTab: 'world',
+    };
+    Object.keys(WTYPES).forEach(k => S.prof[k] = 0);
+  }
+
+  // Skip straight to game
+  showScreen('game');
+  const waitForCanvas = setInterval(() => {
+    const canvas = document.getElementById('game-canvas');
+    if (canvas && canvas.clientWidth > 0) {
+      clearInterval(waitForCanvas);
+      try { Game.init(); } catch(e) { console.error('Game.init() failed:', e); }
+    }
+  }, 50);
 })();

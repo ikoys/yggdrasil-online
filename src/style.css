@@ -1,7 +1,7 @@
 ﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap');
 
 :root {
-  --gold:      #ffd24b;
+  --gold:      #6af141;
   --gold-dim:  rgba(201,168,76,.4);
   --gold-edge: rgba(201,168,76,.25);
   --bg-deep:   rgba(4,9,3,.95);
@@ -236,7 +236,7 @@ body {
 
 /* ── HUD — top left ─────────────────────────────── */
 #hud{position:absolute;top:10px;left:10px;width:168px;pointer-events:none}
-.h-top{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.h-top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
 .lv-b{background:linear-gradient(135deg,#3a2010,#5c3a1e);border:1px solid var(--gold);color:var(--gold);font-family:var(--font-t);font-size:8px;padding:2px 6px;border-radius:2px;letter-spacing:1px;white-space:nowrap}
 .h-nm{font-family:var(--font-t);color:var(--gold2);font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .br{margin-bottom:3px}
@@ -250,7 +250,6 @@ body {
 /* ── Weapon / gold / floor indicators ──────────── */
 #wtype{position:absolute;top:10px;left:184px;background:var(--hud);border:1px solid var(--border);border-radius:2px;padding:3px 8px;font-family:var(--font-t);font-size:8px;color:var(--gold);white-space:nowrap}
 #gold-d{position:absolute;top:30px;left:184px;background:var(--hud);border:1px solid var(--border);border-radius:2px;padding:3px 8px;font-family:var(--font-t);font-size:8px;color:var(--gold);white-space:nowrap}
-#floor-d{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-family:var(--font-t);font-size:8px;letter-spacing:2px;color:rgba(201,168,76,.5);background:var(--hud);border:1px solid var(--border);padding:4px 12px;border-radius:2px;text-align:center;white-space:nowrap}
 #safe-b{position:absolute;top:30px;left:50%;transform:translateX(-50%);font-family:var(--font-t);font-size:8px;color:var(--leaf);letter-spacing:2px;background:rgba(76,175,80,.08);border:1px solid rgba(76,175,80,.28);padding:2px 9px;border-radius:2px;display:none;white-space:nowrap}
 
 /* ── Target HUD ─────────────────────────────────── */
@@ -261,7 +260,7 @@ body {
 #t-type{font-size:8px;color:rgba(232,224,200,.35);font-family:var(--font-t);margin-top:2px;letter-spacing:1px}
 
 /* ── Minimap ─────────────────────────────────────── */
-#mm{position:absolute;top:10px;right:10px;width:84px;height:84px;border:1px solid rgba(201,168,76,.25);border-radius:2px;overflow:hidden}
+#mm{position:absolute;top:10px;right:10px;width:150px;height:150x;border:1px solid rgba(201,168,76,.25);border-radius:4px;overflow:hidden}
 #mm-c{width:100%;height:100%}
 .mm-l{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-family:var(--font-t);font-size:6px;color:rgba(201,168,76,.35);pointer-events:none}
 
@@ -272,7 +271,7 @@ body {
 #boss-bf{height:100%;background:linear-gradient(90deg,#7b1a1a,#e74c3c);width:100%;transition:width .3s}
 
 /* ── Quest tracker ────────────────────────────────── */
-#qt{position:absolute;right:10px;top:104px;width:158px;background:var(--hud);border:1px solid var(--border);border-radius:2px;padding:6px 8px;pointer-events:none}
+#qt{position:absolute;right:10px;top:154px;width:150px;background:var(--hud);border:1px solid var(--border);border-radius:2px;padding:6px 8px;pointer-events:none}
 .qt-t{font-family:var(--font-t);color:var(--gold);font-size:8px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:3px}
 .qt-q{margin-bottom:5px}.qt-qn{font-family:var(--font-t);color:var(--gold2);font-size:8px;font-weight:700;margin-bottom:1px}
 .qt-o{font-size:8px;color:rgba(232,224,200,.5);line-height:1.5}.qt-o.done{color:var(--leaf)}
@@ -290,8 +289,12 @@ body {
 .dlg-ch:active{background:rgba(201,168,76,.14);border-color:var(--gold)}
 
 /* ── Panels (shop / inv / quest / weapon) ─────────── */
-#shop-panel,#inv-panel,#quest-panel,#wpn-panel{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:150;backdrop-filter:blur(4px)}
-#shop-panel.open,#inv-panel.open,#quest-panel.open,#wpn-panel.open{display:flex}
+#shop-panel,#inv-panel,#wpn-panel{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:150;backdrop-filter:blur(4px)}
+#shop-panel.open,#inv-panel.open,#wpn-panel.open{display:flex}
+#voice-w{position:absolute;bottom:170px;right:13px;pointer-events:all;display:flex;flex-direction:column;gap:5px;align-items:center}
+#voice-btn{width:44px;height:44px;border-radius:50%;border:4px solid rgba(201,168,76,.25);background:var(--hud);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#mute-btn{width:34px;height:34px;border-radius:50%;border:1px solid rgba(201,168,76,.15);background:var(--hud);font-size:13px;cursor:pointer;display:none;align-items:center;justify-content:center}
+#vnear{font-family:var(--font-t);font-size:6px;color:rgba(201,168,76,.4);text-align:center;max-width:48px;line-height:1.4}
 .pnl-box{background:rgba(4,10,3,.96);border:1px solid var(--border);border-radius:4px;padding:16px;width:min(390px,94vw);max-height:80vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .pnl-box::-webkit-scrollbar{width:2px}.pnl-box::-webkit-scrollbar-thumb{background:rgba(201,168,76,.25)}
 .pnl-hdr{font-family:var(--font-t);color:var(--gold);font-size:11px;letter-spacing:2px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
@@ -364,8 +367,8 @@ body {
 .act-b:active{transform:scale(.86)}
 
 /* ── Voice chat ──────────────────────────────────── */
-#voice-w{position:absolute;bottom:80px;right:12px;pointer-events:all;display:flex;flex-direction:column;gap:5px;align-items:center}
-#voice-btn{width:44px;height:44px;border-radius:50%;border:1px solid rgba(201,168,76,.25);background:var(--hud);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#voice-w{position:absolute;bottom:170px;right:13px;pointer-events:all;display:flex;flex-direction:column;gap:5px;align-items:center}
+#voice-btn{width:44px;height:44px;border-radius:50%;border:4px solid rgba(201,168,76,.25);background:var(--hud);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 #mute-btn{width:34px;height:34px;border-radius:50%;border:1px solid rgba(201,168,76,.15);background:var(--hud);font-size:13px;cursor:pointer;display:none;align-items:center;justify-content:center}
 #vnear{font-family:var(--font-t);font-size:6px;color:rgba(201,168,76,.4);text-align:center;max-width:48px;line-height:1.4}
 
@@ -429,7 +432,7 @@ body {
 #cam-rotate-zone {
   position: absolute;
   top: 0; right: 0;
-  width: 100%; height: 100%;
+  width: 100%; height: 50%;
   touch-action: none;
   display: block;
   z-index: 54;
@@ -452,3 +455,164 @@ body {
   pointer-events: all;
 }
 #fs-btn:active { opacity: .7; }
+/* ── Mobile UI scaling ─────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* ── TOP BAR ─────────────────────────────────────── */
+  #hud {
+    position: fixed;
+    width: 80vw;
+    left: 0;
+    top: 0;
+    background: rgba(4,9,3,0.5);
+    border-bottom: 1vw solid rgba(201,168,76,.1);
+    border-right: 1vw solid rgba(201,168,76,.1);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1vw;
+    box-sizing: border-box;
+    z-index: 01;
+  }
+
+  .h-top {
+    display: flex;
+    flex-direction: row;
+    gap: 0.3vw;
+    flex-shrink: 0;
+  }
+
+  .hud-bars {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    gap: 1.5vw;
+    align-items: center;
+  }
+  .br {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
+  .lv-b  { font-size: 2.2vw; padding: 0.3vw 1vw; }
+  .h-nm  { font-size: 2vw; padding: 0.3vw 1vw; }
+  .br:last-child { display: none; }
+  .bw    { height: 2vw; }
+  .bl    { font-size: 1.5vw; margin-bottom: 0.2vw; }
+
+  /* ── HIDDEN ──────────────────────────────────────── */
+  #wtype        { display: none; }
+  #gold-d       { display: none; }
+  #floor-d      { display: none; }
+  #safe-b       { top: 8vw; font-size: 1.6vw; }
+  #bleed-ind    { top: 8vw; left: 2vw; font-size: 1.8vw; }
+  #dual-notice  { top: 10vw; font-size: 1.8vw; }
+
+  /* ── MINIMAP ─────────────────────────────────────── */
+  #mm {
+    width: 15vw;
+    height: 15vw;
+    top: 0;
+    right: 0;
+    border-radius: 0;
+  }
+
+  /* ── TARGET HUD ──────────────────────────────────── */
+  #thud     { top: 9vw; min-width: 28vw; padding: 1vw 2vw; }
+  #t-nm     { font-size: 2vw; }
+  #t-hw     { width: 26vw; }
+  #t-type   { font-size: 1.6vw; }
+
+  /* ── BOSS BAR ────────────────────────────────────── */
+  #bossbar  { width: 50vw; top: 13vw; }
+  #boss-nm  { font-size: 2vw; }
+
+  /* ── QUESTS ──────────────────────────────────────── */
+  #qt {
+    width: 10vw;
+    height: 8vw;
+    right: 8vw;
+    bottom: 0;
+    padding: 1vw 1.5vw;
+    font-size: 0.5vw;
+  }
+  .qt-t  { font-size: .6vw; padding-bottom: 0.5vw; }
+  .qt-qn { font-size: .6vw; }
+  .qt-o  { font-size: .4vw; }
+  .qt-e  { font-size: .4vw; }
+
+  /* ── CHAT ────────────────────────────────────────── */
+  #chat-w {
+    width: 20vw;
+    bottom: 25vw;
+    left: 1vw;
+  }
+  .c-tab    { font-size: 1.6vw; padding: 0.5vw; }
+  #chat-log { max-height: 10vw; font-size: 1.6vw; }
+  .cm       { font-size: 1.6vw; }
+  #chat-inp { font-size: 1.8vw; padding: 0.8vw; }
+  #chat-snd { font-size: 2.2vw; padding: 0.8vw 1.2vw; }
+
+  /* ── SKILL BAR ───────────────────────────────────── */
+  #skills   { bottom: 1vw; gap: 1.5vw; }
+  .sk       { width: 5vw; height: 5vw; font-size: 4vw; }
+  .sk .cdt  { font-size: 1.6vw; }
+  .sk .sknm { font-size: 1.1vw; }
+
+  /* ── RIGHT BUTTONS ───────────────────────────────── */
+  #act-r  { bottom: 1vw; right: 1vw; gap: 1.5vw; }
+  .act-b  { width: 4.5vw; height: 4vw; font-size: 3.8vw; }
+  #voice-w,#voice-btn, #mute-btn, #vnear, #voice-btn { bottom: 16.5vw; right: 0.8vw; gap: 1vw; height:4vw; width:4vw}
+
+
+  /* ── JOYSTICK ────────────────────────────────────── */
+  #joystick-zone {
+    width: 10vw;
+    height: 10vw;
+    bottom: 5vw;
+    left: 4vw;
+  }
+  #joystick-knob {
+    width: 4vw;
+    height: 4vw;
+  }
+
+  /* ── NPC HINT ────────────────────────────────────── */
+  #npc-hint { font-size: 2vw; bottom: 22vw; padding: 1vw 2vw; }
+
+  /* ── DIALOGUE ────────────────────────────────────── */
+  #dlg      { width: 78vw; bottom: 22vw; padding: 2vw 3vw; }
+  .dlg-sp   { font-size: 2.2vw; }
+  .dlg-tx   { font-size: 2vw; }
+  .dlg-ch   { font-size: 1.8vw; padding: 1.2vw 2vw; }
+
+  /* ── NOTIFICATION ────────────────────────────────── */
+  #notif  { font-size: 2.5vw; padding: 1vw 3vw; }
+  #klog   { right: 22vw; bottom: 14vw; width: auto; }
+  .kl     { font-size: 1.8vw; }
+
+  /* ── PANELS ──────────────────────────────────────── */
+  .pnl-box  { width: 90vw; padding: 3vw; }
+  .pnl-hdr  { font-size: 2.5vw; margin-bottom: 2vw; }
+  .pnl-x    { font-size: 4vw; }
+  .sh-gold  { font-size: 2vw; }
+  .sh-nm    { font-size: 2.2vw; }
+  .sh-desc  { font-size: 1.8vw; }
+  .sh-price { font-size: 2.2vw; }
+  .sh-ico   { font-size: 5vw; }
+  .inv-nm   { font-size: 1.6vw; }
+  .inv-ico  { font-size: 1vw; }
+  .eq-lbl   { font-size: 1.4vw; }
+  .eq-ico   { font-size: 4vw; }
+
+  /* ── LEVEL UP ────────────────────────────────────── */
+  .lvup-box  { width: 80vw; padding: 4vw; }
+  .lvup-ttl  { font-size: 4vw; }
+  .lvup-sub  { font-size: 2vw; }
+  .lvup-pts  { font-size: 2.5vw; }
+  .stat-name { font-size: 2.2vw; }
+  .stat-desc { font-size: 1.8vw; }
+  .stat-val  { font-size: 3vw; }
+  .stat-btn  { width: 6vw; height: 6vw; font-size: 3vw; }
+
+}
