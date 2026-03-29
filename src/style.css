@@ -53,7 +53,10 @@ body {
 
 /* ── LANDING ─────────────────────────────────────── */
 #s-auth {
+  display: flex;
   position: relative;
+  flex-direction: column;
+  align-items: center;
   width: min(420px, 92vw);
   padding: 32px 28px;
   border: 1px solid var(--gold-edge);
@@ -233,6 +236,26 @@ body {
 /* ── GAME UI CONTAINER ────────────────────────────── */
 #ui{position:absolute;inset:0;pointer-events:none;z-index:55}
 #ui.hidden{display:none}
+#fullscreen-btn {
+  position: absolute;
+  top: 2px;
+  right: 22vw; /* sits left of minimap */
+  z-index: 120;
+  background: rgba(4,9,3,0.75);
+  border: 1px solid rgba(201,168,76,.25);
+  border-radius: 4px;
+  color: var(--gold);
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+}
+
+#fullscreen-btn:active { background: rgba(201,168,76,.15); }
 
 /* ── HUD — top left ─────────────────────────────── */
 #hud{position:absolute;top:10px;left:10px;width:168px;pointer-events:none}
@@ -408,6 +431,7 @@ body {
 
 /* ── Mobile virtual joystick ─────────────────────── */
 #joystick-zone {
+  
   position: absolute;
   bottom: 36px; left: 36px;
   width: 112px; height: 112px;
@@ -456,7 +480,34 @@ body {
 }
 #fs-btn:active { opacity: .7; }
 /* ── Mobile UI scaling ─────────────────────────────── */
-@media (max-width: 768px) {
+@media (orientation: landscape) and (max-height: 500px) {
+  /*--------- authentication screen ------------*/
+  #s-auth {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1vw;
+    overflow-y: auto;
+  }
+
+  .a-leaf { font-size: 4vw; margin-bottom: 0.5vw; }
+  .a-ygg  { font-size: 5vw; letter-spacing: 4px; }
+  .a-sub  { font-size: 1.2vw; margin-bottom: 2vw; }
+
+  .a-box  { padding: 2vw 3vw; width: min(280px, 50vw); }
+  .a-ttl  { font-size: 1.6vw; margin-bottom: 2vw; }
+
+  .btn-g, .btn-gs {
+    padding: 1.5vw 2vw;
+    font-size: 1.6vw;
+    margin: 0.5vw 0;
+  }
+
+  .a-divider { margin: 1.5vw 0; }
+  .a-note    { font-size: 1.2vw; }
+
+}
 
   /* ── TOP BAR ─────────────────────────────────────── */
   #hud {
@@ -516,6 +567,14 @@ body {
     right: 0;
     border-radius: 0;
   }
+  #fullscreen-btn {
+    top: 1vw;
+    right: 15vw;
+    width: 5vw;
+    height: 5vw;
+    font-size: 2.5vw;
+  }
+}
 
   /* ── TARGET HUD ──────────────────────────────────── */
   #thud     { top: 9vw; min-width: 28vw; padding: 1vw 2vw; }
@@ -529,7 +588,7 @@ body {
 
   /* ── QUESTS ──────────────────────────────────────── */
   #qt {
-    width: 10vw;
+    width: 15vw;
     height: 8vw;
     right: 8vw;
     bottom: 0;
@@ -543,13 +602,13 @@ body {
 
   /* ── CHAT ────────────────────────────────────────── */
   #chat-w {
-    width: 20vw;
+    width: 25vw;
     bottom: 25vw;
     left: 1vw;
   }
   .c-tab    { font-size: 1.6vw; padding: 0.5vw; }
-  #chat-log { max-height: 10vw; font-size: 1.6vw; }
-  .cm       { font-size: 1.6vw; }
+  #chat-log { max-height: 5vw; font-size: 1.6vw; }
+  .cm       { font-size: 2vw; }
   #chat-inp { font-size: 1.8vw; padding: 0.8vw; }
   #chat-snd { font-size: 2.2vw; padding: 0.8vw 1.2vw; }
 
