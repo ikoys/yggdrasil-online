@@ -132,7 +132,7 @@ const WTYPES = {
 };
 
 const DATA = {
-  enemies: {
+  /*enemies: {
     draugr:     { name:'Draugr',       hp:80,  def:4,  atk:10, spd:2.0, xp:25, gold:[8,15],  sz:1.0, shp:'biped',  c:0x445566, type:'armored', aggr:8,  drops:[{i:'wolfsbane',ch:.15}] },
     forestWolf: { name:'Forest Wolf',  hp:55,  def:2,  atk:12, spd:3.5, xp:18, gold:[5,10],  sz:0.9, shp:'wolf',   c:0x5a4a3a, type:'fast',    aggr:9,  drops:[{i:'wolfsbane',ch:.25}] },
     goblin:     { name:'Goblin',       hp:45,  def:1,  atk:8,  spd:3.2, xp:14, gold:[4,9],   sz:0.75,shp:'biped',  c:0x4a7a2a, type:'fast',    aggr:7,  drops:[{i:'hpPotion',ch:.1}]  },
@@ -140,7 +140,7 @@ const DATA = {
     treant:     { name:'Treant',       hp:200, def:8,  atk:20, spd:1.0, xp:70, gold:[25,45], sz:1.5, shp:'biped',  c:0x3a5a1a, type:'armored', aggr:5,  drops:[{i:'leatherArmor',ch:.08}] },
     elderDraugr:{ name:'Elder Draugr', hp:320, def:14, atk:28, spd:2.2, xp:120,gold:[40,70], sz:1.3, shp:'boss',   c:0x334455, type:'armored', aggr:12, boss:true, emoji:'💀',
                   drops:[{i:'chainMail',ch:.15},{i:'steelSword',ch:.1}] },
-  },
+  },*/
 
   floor1: {
     enemies: ['draugr','forestWolf','goblin','darkKnight','treant'],
@@ -2344,3 +2344,46 @@ const dz = (-iz * cos + ix * sin) * S.spd * dt;
   }
 },
 };
+// DEV MODE — comment this out before going live
+(function devAutoLogin() {
+  const saved = localStorage.getItem('ygg_save_v1');
+  if (saved) {
+    S = JSON.parse(saved);
+  } else {
+    S = {
+      uid: 'dev_test',
+      user: 'DevPlayer',
+      skin: '#d4a882',
+      lv: 10,
+      xp: 0, xpN: 100,
+      hp: 200, maxHp: 200,
+      sp: 100, maxSp: 100,
+      str: 15, agi: 15, vit: 15, dex: 15,
+      statPts: 0,
+      gold: 9999,
+      wtype: '1h',
+      prof: {},
+      bleedStacks: 0, bleedTimer: 0, bleedTarget: null,
+      inv: [
+        { id: 'hpPotion', qty: 10 },
+        { id: 'basicSword', qty: 1 },
+        { id: 'ironSword', qty: 1 },
+        { id: 'leatherArmor', qty: 1 },
+      ],
+      eq: { weapon: null, armor: null, accessory: null },
+      target: null, atkCd: 0, iF: 0, scd: [0,0,0,0],
+      inBoss: false, inSafe: false, chatTab: 'world',
+    };
+    Object.keys(WTYPES).forEach(k => S.prof[k] = 0);
+  }
+
+  // Skip straight to game
+  showScreen('game');
+  const waitForCanvas = setInterval(() => {
+    const canvas = document.getElementById('game-canvas');
+    if (canvas && canvas.clientWidth > 0) {
+      clearInterval(waitForCanvas);
+      try { Game.init(); } catch(e) { console.error('Game.init() failed:', e); }
+    }
+  }, 50);
+})();
