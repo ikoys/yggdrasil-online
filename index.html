@@ -86,7 +86,7 @@
   <!-- Main 3D canvas -->
   <canvas id="game-canvas"></canvas>
 
-  <!-- Loading overlay (shown while town + character GLBs load) -->
+  <!-- Loading overlay -->
   <div id="loading-overlay">
     <div class="lo-inner">
       <div class="lo-leaf">🍃</div>
@@ -96,21 +96,52 @@
     </div>
   </div>
 
-  <!-- GAME UI (HUD, panels, etc.) -->
+  <!-- GAME UI -->
   <div id="ui" class="hidden">
 
-    <!-- HUD top-left: level, name, bars -->
+    <!-- HUD: menu + level badge + name + bars -->
     <div id="hud">
-  <div class="h-top" onclick="UI.showStatPanel()" ontouchstart="UI.showStatPanel()" style="cursor:pointer" title="View Stats">
-    <span class="lv-b" id="lv-b">Lv 1</span>
-    <span class="h-nm" id="h-nm">Wanderer</span>
-  </div>
-  <div class="hud-bars">
-    <div class="br"><div class="bl"><span>HP</span><span id="hp-t">200/200</span></div><div class="bw"><div class="bf" id="hp-f" style="width:100%"></div></div></div>
-    <div class="br"><div class="bl"><span>SP</span><span id="sp-t">100/100</span></div><div class="bw"><div class="bf" id="sp-f" style="width:100%"></div></div></div>
-    <div class="br"><div class="bl"><span>XP</span><span id="xp-t">0/100</span></div><div class="bw"><div class="bf" id="xp-f"></div></div></div>
-  </div>
-</div>
+
+      <!-- Menu button + dropdown -->
+      <div id="menu-wrap">
+        <div id="menu-btn" onclick="UI.toggleMenu()" ontouchstart="UI.toggleMenu()">
+          MENU
+          <span id="stat-point-dot"></span>
+        </div>
+        <div id="menu-panel">
+          <div class="menu-panel-item" onclick="UI.openCharacterMenu()" ontouchstart="UI.openCharacterMenu()">
+            👤 Character
+            <span id="menu-stat-dot" class="menu-red-dot"></span>
+          </div>
+          <div class="menu-panel-item" onclick="UI.toggleInv(); UI.closeMenu()" ontouchstart="UI.toggleInv(); UI.closeMenu()">
+            🎒 Inventory
+          </div>
+          <div class="menu-panel-item" onclick="UI.toggleWpn(); UI.closeMenu()" ontouchstart="UI.toggleWpn(); UI.closeMenu()">
+            ⚔️ Weapon Mastery
+          </div>
+          <div class="menu-panel-item" onclick="UI.openSkyMenu()" ontouchstart="UI.openSkyMenu()">
+            🌅 Sky
+          </div>
+          <div class="menu-panel-item menu-logout" onclick="UI.logout()" ontouchstart="UI.logout()">
+            🚪 Log Out
+          </div>
+        </div>
+      </div>
+
+      <!-- Level + Name (clickable → stat panel) -->
+      <div class="h-top" onclick="UI.showStatPanel()" ontouchstart="UI.showStatPanel()" style="cursor:pointer" title="View Stats">
+        <span class="lv-b" id="lv-b">Lv 1</span>
+        <span class="h-nm" id="h-nm">Wanderer</span>
+      </div>
+
+      <!-- HP / SP / XP bars -->
+      <div class="hud-bars">
+        <div class="br"><div class="bl"><span>HP</span><span id="hp-t">200/200</span></div><div class="bw"><div class="bf" id="hp-f" style="width:100%"></div></div></div>
+        <div class="br"><div class="bl"><span>SP</span><span id="sp-t">100/100</span></div><div class="bw"><div class="bf" id="sp-f" style="width:100%"></div></div></div>
+        <div class="br"><div class="bl"><span>XP</span><span id="xp-t">0/100</span></div><div class="bw"><div class="bf" id="xp-f"></div></div></div>
+      </div>
+
+    </div><!-- /#hud -->
 
     <!-- Weapon type & gold indicators -->
     <div id="wtype">⚔️ <span id="wt-txt">1-H Sword</span></div>
@@ -133,7 +164,7 @@
     </div>
 
     <!-- Minimap -->
-     <button id="fullscreen-btn" onclick="UI.toggleFullscreen()">⛶</button>
+    <button id="fullscreen-btn" onclick="UI.toggleFullscreen()">⛶</button>
     <div id="mm">
       <canvas id="mm-c" width="100" height="100"></canvas>
       <div class="mm-l" id="mm-l">MIDGARD</div>
@@ -144,12 +175,6 @@
       <div id="boss-nm">BOSS</div>
       <div id="boss-bw"><div id="boss-bf"></div></div>
     </div>
-
-    <!-- Quest tracker
-    <div id="qt">
-      <div class="qt-t">⟨ QUESTS ⟩</div>
-      <div id="qt-c"><div class="qt-e">No active quests</div></div>
-    </div> -->
 
     <!-- NPC interaction hint -->
     <div id="npc-hint" onclick="Dialogue.openNearby()" ontouchstart="Dialogue.openNearby()">👆 TAP TO TALK</div>
@@ -174,57 +199,16 @@
       </div>
     </div>
 
-    <!-- Skill buttons -->
+    <!-- Skill buttons + manual attack -->
     <div id="skills">
       <div class="sk" id="sk0" ontouchstart="Combat.skill(0)" onclick="Combat.skill(0)"><span class="sknm" id="sn0"></span><span id="si0">⚔️</span><span class="cdt" id="cd0"></span></div>
       <div class="sk" id="sk1" ontouchstart="Combat.skill(1)" onclick="Combat.skill(1)"><span class="sknm" id="sn1"></span><span id="si1">✦</span><span class="cdt" id="cd1"></span></div>
       <div class="sk" id="sk2" ontouchstart="Combat.skill(2)" onclick="Combat.skill(2)"><span class="sknm" id="sn2"></span><span id="si2">💥</span><span class="cdt" id="cd2"></span></div>
       <div class="sk" id="sk3" ontouchstart="Combat.skill(3)" onclick="Combat.skill(3)"><span class="sknm" id="sn3"></span><span id="si3">🌀</span><span class="cdt" id="cd3"></span></div>
-      <!-- Manual attack button -->
       <div class="sk sk-attack" id="sk-atk" ontouchstart="Combat.manualAttack()" onclick="Combat.manualAttack()">
         <span class="sknm">ATTACK</span>
         <span>⚔</span>
         <span class="cdt" id="cd-atk"></span>
-      </div>
-    </div>
-
-    <!-- Menu button (top right) -->
-    <div id="menu-btn" onclick="UI.toggleMenu()" ontouchstart="UI.toggleMenu()">
-      MENU
-      <span id="stat-point-dot"></span>
-    </div>
-
-    <!-- Hamburger menu panel -->
-    <div id="menu-panel">
-      <div class="menu-panel-item" onclick="UI.openCharacterMenu()" ontouchstart="UI.openCharacterMenu()">
-        👤 Character
-        <span id="menu-stat-dot" class="menu-red-dot"></span>
-      </div>
-      <div class="menu-panel-item" onclick="UI.toggleInv(); UI.closeMenu()" ontouchstart="UI.toggleInv(); UI.closeMenu()">
-        🎒 Inventory
-      </div>
-      <div class="menu-panel-item" onclick="UI.toggleWpn(); UI.closeMenu()" ontouchstart="UI.toggleWpn(); UI.closeMenu()">
-        ⚔️ Weapon Mastery
-      </div>
-      <div class="menu-panel-item menu-logout" onclick="UI.logout()" ontouchstart="UI.logout()">
-        🚪 Log Out
-      </div>
-    </div>
-
-    <!-- Character submenu panel -->
-    <div id="character-menu-panel">
-      <div class="pnl-box">
-        <div class="pnl-hdr">
-          <span>⟨ CHARACTER ⟩</span>
-          <span class="pnl-x" onclick="UI.closeCharacterMenu()" ontouchstart="UI.closeCharacterMenu()">✕</span>
-        </div>
-        <div class="character-menu-btn" onclick="UI.openStatsFromCharMenu()" ontouchstart="UI.openStatsFromCharMenu()">
-          📊 Stats
-          <span id="char-menu-stat-dot" class="menu-red-dot"></span>
-        </div>
-        <div class="character-menu-btn" onclick="UI.openEquipFromCharMenu()" ontouchstart="UI.openEquipFromCharMenu()">
-          🥋 Equipment
-        </div>
       </div>
     </div>
 
@@ -273,67 +257,68 @@
       </div>
     </div>
 
-    <!-- Quest log panel
-    <div id="quest-panel">
+    <!-- Character submenu panel -->
+    <div id="character-menu-panel">
       <div class="pnl-box">
-        <div class="pnl-hdr"><span>⟨ QUEST LOG ⟩</span><span class="pnl-x" ontouchstart="UI.toggleQ()" onclick="UI.toggleQ()">✕</span></div>
-        <div id="quest-list"></div>
+        <div class="pnl-hdr">
+          <span>⟨ CHARACTER ⟩</span>
+          <span class="pnl-x" onclick="UI.closeCharacterMenu()" ontouchstart="UI.closeCharacterMenu()">✕</span>
+        </div>
+        <div class="character-menu-btn" onclick="UI.openStatsFromCharMenu()" ontouchstart="UI.openStatsFromCharMenu()">
+          📊 Stats
+          <span id="char-menu-stat-dot" class="menu-red-dot"></span>
+        </div>
+        <div class="character-menu-btn" onclick="UI.openEquipFromCharMenu()" ontouchstart="UI.openEquipFromCharMenu()">
+          🥋 Equipment
+        </div>
       </div>
-    </div> -->
+    </div>
+    <!-- Sky submenu panel -->
+     <div id="sky-menu-panel">
+      <div class="pnl-box">
+        <div class="pnl-hdr">
+          <span>⟨ SKY ⟩</span>
+            <span class="pnl-x" onclick="UI.closeSkyMenu()" ontouchstart="UI.closeSkyMenu()">✕</span>
+         </div>
+            <div class="character-menu-btn" onclick="UI.setSky('src/img/sky.hdr')" ontouchstart="UI.setSky('src/img/sky.hdr')">☀️ Day</div>
+            <div class="character-menu-btn" onclick="UI.setSky('src/img/afternoon.hdr')" ontouchstart="UI.setSky('src/img/afternoon.hdr')">🌇 Afternoon</div>
+            <div class="character-menu-btn" onclick="UI.setSky('src/img/night.hdr')" ontouchstart="UI.setSky('src/img/night.hdr')">🌙 Night</div>
+      </div>
+      </div>
 
   </div><!-- /#ui -->
 
-  <!-- Controls hint — fades out after first keypress -->
-  <div class="hud-hint" id="controls-hint">
-    <span class="hint-key">W A S D</span> Move &nbsp;·&nbsp;
-    <span class="hint-key">Z X C V</span> Skills &nbsp;·&nbsp;
-    <span class="hint-key">F</span> Talk &nbsp;·&nbsp;
-    <span class="hint-key">Drag</span> Camera
-  </div>
-
-  <!-- ── MOBILE CONTROLS ── -->
-  <!-- Left half: virtual joystick -->
+  <!-- Mobile controls -->
   <div id="joystick-zone">
     <div id="joystick-knob"></div>
   </div>
-
-  <!-- Right half: camera rotation drag area -->
   <div id="cam-rotate-zone"></div>
 
-  <!-- Stat panel — lives outside #ui so it's never hidden by the ui.hidden class -->
+  <!-- Stat panel — outside #ui so it's never hidden -->
   <div id="stat-panel" onclick="if(event.target===this)UI.closeStatPanel()" ontouchstart="if(event.target===this)UI.closeStatPanel()">
     <div class="pnl-box stat-panel-box">
       <div class="pnl-hdr">
         <span>⟨ CHARACTER STATS ⟩</span>
         <span class="pnl-x" onclick="UI.closeStatPanel()" ontouchstart="UI.closeStatPanel()">✕</span>
       </div>
-
       <div class="stat-panel-namerow">
         <span class="stat-panel-lv" id="sp-lv">Lv 1</span>
         <span class="stat-panel-name" id="sp-nm">Wanderer</span>
       </div>
-
-      <!-- Two-column body -->
       <div class="stat-panel-body">
-
-        <!-- LEFT: vitals + combat grid + stat points -->
+        <!-- LEFT: vitals + combat + stat points + gold -->
         <div class="stat-panel-left">
           <div class="stat-panel-section-label">VITALS</div>
           <div class="stat-panel-vital">
             <div class="stat-panel-vital-label">MaxHP</div>
             <div class="stat-panel-vital-val" id="sp-maxhp">200</div>
-            <div class="stat-panel-vital-bar-wrap">
-              <div class="stat-panel-vital-bar hp-bar" id="sp-hp-bar"></div>
-            </div>
+            <div class="stat-panel-vital-bar-wrap"><div class="stat-panel-vital-bar hp-bar" id="sp-hp-bar"></div></div>
           </div>
           <div class="stat-panel-vital">
             <div class="stat-panel-vital-label">MaxSP</div>
             <div class="stat-panel-vital-val" id="sp-maxsp">100</div>
-            <div class="stat-panel-vital-bar-wrap">
-              <div class="stat-panel-vital-bar sp-bar" id="sp-sp-bar"></div>
-            </div>
+            <div class="stat-panel-vital-bar-wrap"><div class="stat-panel-vital-bar sp-bar" id="sp-sp-bar"></div></div>
           </div>
-
           <div class="stat-panel-section-label">COMBAT</div>
           <div class="stat-panel-combat-grid">
             <div class="stat-panel-combat-row">
@@ -353,35 +338,29 @@
               <span class="stat-panel-combat-key">CSPD</span><span class="stat-panel-combat-val" id="sp-cspd">0</span>
             </div>
           </div>
-
           <div class="stat-panel-pts-row">
             <span class="stat-panel-pts-label">Stat Points</span>
             <span class="stat-panel-pts-val" id="sp-pts">0</span>
           </div>
-
           <div class="stat-panel-gold-row">
             <span>🪙 Gold</span>
             <span id="sp-gold">0</span>
           </div>
         </div>
-
-        <!-- RIGHT: core stats with bars + distribution buttons -->
+        <!-- RIGHT: base stats with distribution buttons -->
         <div class="stat-panel-right">
           <div class="stat-panel-section-label">BASE STATS</div>
           <div id="stat-panel-core-rows"></div>
-          <!-- Confirm/Cancel shown only when there are pending point changes -->
           <div id="stat-dist-actions" style="display:none">
             <button class="stat-dist-confirm" onclick="StatDist.confirm()" ontouchstart="StatDist.confirm()">✓ Confirm</button>
-            <button class="stat-dist-cancel"  onclick="StatDist.cancel()"  ontouchstart="StatDist.cancel()">✕ Reset</button>
+            <button class="stat-dist-cancel" onclick="StatDist.cancel()" ontouchstart="StatDist.cancel()">✕ Reset</button>
           </div>
         </div>
-
-      </div><!-- /.stat-panel-body -->
+      </div>
     </div>
   </div>
 
 </div><!-- /#s-game -->
-
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>

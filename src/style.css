@@ -209,12 +209,13 @@ body {
   display: none;
   background: #050a03;
   z-index: 50;
+  pointer-events: none;
 }
 #game-canvas {
   width: 100%; height: 100%;
   display: block;
   touch-action: none;
-  #game-canvas { pointer-events: none; }
+  pointer-events: all;
 }
 
 /* ── Loading overlay ──────────────────────────────── */
@@ -235,7 +236,7 @@ body {
 @keyframes lo-slide { 0%{width:0%;opacity:1} 70%{width:100%;opacity:1} 100%{width:100%;opacity:0} }
 
 /* ── GAME UI CONTAINER ────────────────────────────── */
-#ui{position:absolute;inset:0;pointer-events:none;z-index:55}
+#ui{position:absolute;inset:0;pointer-events:none;z-index:55; pointer-events: none;}
 #ui > * { pointer-events: all; }
 #ui.hidden{display:none}
 #fullscreen-btn {
@@ -314,7 +315,10 @@ body {
 .dlg-ch:active{background:rgba(201,168,76,.14);border-color:var(--gold)}
 
 /* ── Panels (shop / inv / quest / weapon) ─────────── */
-#shop-panel,#inv-panel,#wpn-panel{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:150;backdrop-filter:blur(4px)}
+#shop-panel,#inv-panel,#wpn-panel,#sky-menu-panel {position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:150;backdrop-filter:blur(4px); pointer-events: all;}
+#inv-panel,#shop-pane,#wpn-panel *        { pointer-events: all; }
+#sky-menu-panel.open {display: block;
+}
 #shop-panel.open,#inv-panel.open,#wpn-panel.open{display:flex}
 #voice-w{position:absolute;bottom:170px;right:13px;pointer-events:all;display:flex;flex-direction:column;gap:5px;align-items:center}
 #voice-btn{width:44px;height:44px;border-radius:50%;border:4px solid rgba(201,168,76,.25);background:var(--hud);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -367,6 +371,7 @@ body {
 
 /* ── Chat ─────────────────────────────────────────── */
 #chat-w{position:absolute;bottom:168px;left:12px;width:196px;pointer-events:all}
+#chat-w *     { pointer-events: all; }
 .c-tabs{display:flex}
 .c-tab{flex:1;padding:3px 4px;background:rgba(0,0,0,.48);border:1px solid rgba(201,168,76,.08);font-family:var(--font-t);font-size:7px;letter-spacing:1px;color:rgba(201,168,76,.3);cursor:pointer;text-align:center;transition:.2s}
 .c-tab.active{background:rgba(201,168,76,.07);color:var(--gold);border-color:rgba(201,168,76,.25)}
@@ -380,6 +385,7 @@ body {
 
 /* ── Skills bar ──────────────────────────────────── */
 #skills{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:all}
+#skills *     { pointer-events: all; }
 .sk{width:54px;height:54px;border-radius:4px;border:1px solid rgba(201,168,76,.3);background:var(--hud);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:19px;position:relative;transition:transform .08s}
 .sk:active{transform:scale(.86)}
 .sk.oncd{opacity:.3;pointer-events:none}
@@ -388,6 +394,7 @@ body {
 
 /* ── Right action buttons ─────────────────────────── */
 #act-r{position:absolute;bottom:12px;right:12px;display:flex;flex-direction:column;gap:6px;pointer-events:all}
+#act-r *      { pointer-events: all; }
 .act-b{width:48px;height:48px;border-radius:50%;border:1px solid rgba(201,168,76,.25);background:var(--hud);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .08s}
 .act-b:active{transform:scale(.86)}
 
@@ -434,6 +441,7 @@ body {
 /* ── Mobile virtual joystick ─────────────────────── */
 #joystick-zone {
   display: none; /* hidden on desktop */
+  pointer-events: all;
   position: absolute;
   bottom: 36px; left: 36px;
   width: 112px; height: 112px;
@@ -456,6 +464,7 @@ body {
 }
 
 #cam-rotate-zone {
+  pointer-events: all;
   display: none; /* hidden on desktop */
   position: absolute;
   top: 0; right: 0;
@@ -467,7 +476,7 @@ body {
 body.is-mobile #joystick-zone  { display: flex; }
 body.is-mobile #cam-rotate-zone { display: block; }
 
-@media (orientation: landscape) and (max-height: 500px){
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 480px){
 
   /* AUTH SCREEN */
   #s-auth {
@@ -489,6 +498,7 @@ body.is-mobile #cam-rotate-zone { display: block; }
 
   /* TOP BAR */
   #hud {
+    pointer-events: all;
     position: fixed;
     width: 80vw;
     left: 0;
@@ -503,6 +513,7 @@ body.is-mobile #cam-rotate-zone { display: block; }
     box-sizing: border-box;
     z-index: 110;
   }
+  #hud * { pointer-events: all; }
   .h-top {
     display: flex;
     flex-direction: row;
@@ -517,12 +528,12 @@ body.is-mobile #cam-rotate-zone { display: block; }
     gap: 1.5vw;
     align-items: center;
   }
-  .br           { flex: 1; margin-bottom: 0; }
+  .br           { position: relative;flex: 1; margin-bottom: 0; }
   .br:last-child{ display: none; }
   .lv-b  { font-size: 2.2vw; padding: 0.3vw 1vw; }
   .h-nm  { font-size: 2vw; }
-  .bw    { height: 2vw; }
-  .bl    { font-size: 1.5vw; margin-bottom: 0.2vw; }
+  .bw    { width: 100%; height: 2vw; border-radius: 2px; overflow: hidden; ;height: 2vw; }
+  .bl    { pointer-events: none;  padding: 0 4vw;align-items: center;justify-content: space-between; display: flex; z-index: 1;inset: 0; position: absolute;font-size: 1.5vw; margin-bottom: 0.2vw; }
 
   /* HIDDEN */
   #wtype       { display: none; }
@@ -543,8 +554,8 @@ body.is-mobile #cam-rotate-zone { display: block; }
 
   /* FULLSCREEN BUTTON */
   #fullscreen-btn {
-    top: 1vw;
-    right: 16vw;
+    top: 10vw;
+    right: 15vw;
     width: 5vw;
     height: 5vw;
     font-size: 2.5vw;
@@ -597,7 +608,7 @@ body.is-mobile #cam-rotate-zone { display: block; }
     width: 15vw;
     height: 15vw;
     bottom: 5vw;
-    left: 2vw;
+    left: 7vw;
   }
   #joystick-knob  { width: 5vw; height: 5vw; }
   #cam-rotate-zone{ display: block; }
@@ -667,12 +678,14 @@ body.is-mobile #cam-rotate-zone { display: block; }
 
   /* STAT PANEL — two-column layout matching reference */
   #stat-panel .pnl-box.stat-panel-box {
+    pointer-events: all;
     width: 96vw;
     max-height: 92vh;
     padding: 1.5vw 2vw;
     display: flex;
     flex-direction: column;
   }
+  #stat-panel *       { pointer-events: all; }
   #stat-panel .pnl-hdr          { font-size: 1.8vw; margin-bottom: 1.2vw; }
   #stat-panel .stat-panel-namerow{
     padding: 0.5vw 1vw;
@@ -735,14 +748,14 @@ body.is-mobile #cam-rotate-zone { display: block; }
   #stat-panel .stat-panel-gold-row { font-size: 1.4vw; margin-top: 1vw; padding-top: 0.8vw; }
 
   /* MENU BUTTON */
-  #menu-btn             { width: 7vw; height: 6vw; font-size: 3vw; top: 1vw; right: 17vw; }
+  #menu-btn             { width: 7vw; height: 6vw; font-size: 3vw; position: relative;flex-shrink: 0; pointer-events: all;}
   #stat-point-dot       { width: 1.2vw; height: 1.2vw; top: 0.5vw; right: 0.5vw; }
-  #menu-panel           { top: 8vw; right: 17vw; min-width: 22vw; }
+  #menu-panel           { top: 0; right: auto; left:100%; min-width: 22vw; }
   .menu-panel-item      { font-size: 1.8vw; padding: 1.5vw 2vw; gap: 1.2vw; }
   .menu-red-dot         { width: 1.2vw; height: 1.2vw; }
 
   /* CHARACTER SUBMENU */
-  .character-menu-btn   { font-size: 2vw; padding: 2vw 2.5vw; margin-bottom: 1vw; gap: 1.5vw; }
+  .character-menu-btn   { font-size: 2vw; padding: 2vw 2.5vw; margin-bottom: 1vw; gap: 1.5vw; pointer-events: all; }
 
   /* ATTACK BUTTON */
   .sk-attack            { min-width: 9vw; }
@@ -968,23 +981,32 @@ body.is-mobile #cam-rotate-zone { display: block; }
    MENU BUTTON
 ───────────────────────────────────────────────────────────── */
 #menu-btn {
-  position: absolute;
-  top: 8px;
-  right: 18vw; /* sits left of minimap */
-  width: 65px;
+  pointer-events: all;
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 55px;
   height: 38px;
   background: rgba(4,10,3,.82);
   border: 1px solid rgba(201,168,76,.3);
   border-radius: 4px;
   color: var(--gold);
-  font-size: 18px;
+  font-size: 10px;
+  letter-spacing: 1px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 120;
-  position: absolute;
+  flex-shrink: 0;
 }
+#menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: auto;
+  pointer-events: all;
+}
+
 
 #stat-point-dot {
   display: none;
@@ -999,11 +1021,13 @@ body.is-mobile #cam-rotate-zone { display: block; }
 }
 
 #menu-panel {
+  pointer-events: all; 
   display: none;
   flex-direction: column;
   position: absolute;
-  top: 50px;
-  right: 18vw;
+  top: 100% ;
+  left: 0;
+  right: auto;
   background: rgba(4,10,3,.96);
   border: 1px solid rgba(201,168,76,.25);
   border-radius: 4px;
@@ -1011,6 +1035,7 @@ body.is-mobile #cam-rotate-zone { display: block; }
   z-index: 200;
   overflow: hidden;
 }
+#menu-panel * { pointer-events: all; }
 #menu-panel.open { display: flex; }
 
 .menu-panel-item {
@@ -1045,6 +1070,7 @@ body.is-mobile #cam-rotate-zone { display: block; }
    CHARACTER SUBMENU PANEL
 ───────────────────────────────────────────────────────────── */
 #character-menu-panel {
+  pointer-events: all;
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,.75);
@@ -1053,6 +1079,7 @@ body.is-mobile #cam-rotate-zone { display: block; }
   justify-content: center;
   z-index: 300;
 }
+#character-menu-panel * { pointer-events: all; }
 #character-menu-panel.open { display: flex; }
 
 .character-menu-btn {

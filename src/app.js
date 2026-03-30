@@ -9,6 +9,7 @@
 const FBCFG = {
   apiKey: "AIzaSyCUZKyN-sxLvJCXLAOUjZ_nsRghqUagcjs",
   authDomain: "yggdrasil-online.firebaseapp.com",
+  databaseURL: "https://yggdrasil-online-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "yggdrasil-online",
   storageBucket: "yggdrasil-online.firebasestorage.app",
   messagingSenderId: "445950943508",
@@ -75,6 +76,7 @@ function showScreen(name) {
 
   // Toggle UI overlay for the game screen
   const ui = document.getElementById('ui');
+  
   if (ui) {
     if (activeName === 'game') ui.classList.remove('hidden');
     else ui.classList.add('hidden');
@@ -1925,8 +1927,46 @@ const UI = {
   toggleQ() {
     const questPanel = document.getElementById('quest-panel');
     if (questPanel) questPanel.classList.toggle('open');
+  },
+  openSkyMenu() {
+  this.closeMenu();
+  document.getElementById('sky-menu-panel').classList.add('open');
+},
+
+closeSkyMenu() {
+  document.getElementById('sky-menu-panel').classList.remove('open');
+},
+
+setSky(path) {
+  const rgbeLoader = new THREE.RGBELoader();
+  rgbeLoader.load(path, (texture) => {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    Game._scene.background = texture;
+    Game._scene.environment = texture;
+  });
+    // Adjust lights to match sky
+  if (path.includes('night')) {
+    Game._ambientLight.intensity = 0.15;
+    Game._sunLight.intensity = 0.25;
+    Game._sunLight.color.setHex(0x334466);
+    Game._scene.fog.color.setHex(0x050510);
+  } else if (path.includes('afternoon')) {
+    Game._ambientLight.intensity = 0.4;
+    Game._sunLight.intensity = 1.4;
+    Game._sunLight.color.setHex(0xff7722);
+    Game._scene.fog.color.setHex(0xff9955);
+  } else {
+    Game._ambientLight.intensity = 1.0;
+    Game._sunLight.intensity = 2.0;
+    Game._sunLight.color.setHex(0xffaa44);
+    Game._scene.fog.color.setHex(0x87ceeb);
   }
+
+  this.closeSkyMenu();
+
+},
 };
+/* end UI object */
 
 // ─────────────────────────────────────────────────────────────
 //  STAT DISTRIBUTION  (used inside the stat panel)
@@ -2146,15 +2186,7 @@ rgbeLoader.load('src/img/sky.hdr', (texture) => {
 
  // ── Load character (running.glb) ─────────────────────────────
 _loadCharacter(onDone) {
-  const slashLoader = this._makeLoader();
-slashLoader.load('src/models/slash.glb', (gltf3) => {
-  if (gltf3.animations?.length) {
-    const slashClip = gltf3.animations[0];
-    this._slashAction = this._mixer.clipAction(slashClip);
-    this._slashAction.setLoop(THREE.LoopOnce, 1);
-    this._slashAction.clampWhenFinished = true;
-  }
-}, null, () => { console.warn('[YGG] slash.glb not found'); });
+
   const loader = this._makeLoader();
   loader.load('src/models/running.glb', (gltf) => {
     this._char = gltf.scene;
@@ -2177,6 +2209,15 @@ slashLoader.load('src/models/slash.glb', (gltf3) => {
     this._scene.add(this._char);
     if (gltf.animations?.length) {
   this._mixer      = new THREE.AnimationMixer(this._char);
+    const slashLoader = this._makeLoader();
+slashLoader.load('src/models/slash.glb', (gltf3) => {
+  if (gltf3.animations?.length) {
+    const slashClip = gltf3.animations[0];
+    this._slashAction = this._mixer.clipAction(slashClip);
+    this._slashAction.setLoop(THREE.LoopOnce, 1);
+    this._slashAction.clampWhenFinished = true;
+  }
+}, null, () => { console.warn('[YGG] slash.glb not found'); });
   this._runAction  = this._mixer.clipAction(gltf.animations[0]);
   this._curCharAnim = 'running';
   this._runAction.play();
