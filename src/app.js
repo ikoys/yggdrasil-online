@@ -35,11 +35,13 @@ try {
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
     if (req) req.call(el).catch(() => {});
   }
+
   function lockLandscape() {
     const so = screen.orientation || screen.msOrientation;
     if (so && so.lock) so.lock('landscape').catch(() => {});
     else if (screen.lockOrientation) screen.lockOrientation('landscape');
   }
+
   function onFirst() { goFullscreen(); lockLandscape(); }
   document.addEventListener('click',      onFirst, { once: true });
   document.addEventListener('touchstart', onFirst, { once: true });
@@ -232,9 +234,9 @@ const Save = {
     };
   },
 
-  save: function() {
+  save: async function() {
     this.saveLocal();
-    this.saveCloud();
+    await this.saveCloud();
   },
 
   saveLocal: function() {
@@ -273,6 +275,11 @@ const Save = {
       console.error('[Save] Error fetching from cloud:', e);
       return null;
     }
+  },
+  _saveTimer: null,
+  debouncedSave: function() {
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => this.save(), 5000);
   }
 };
 
@@ -1234,6 +1241,7 @@ const Ens = {
     Stats.profGain(rnd(2, 5));
     Player.lvCheck();
     FX.floatAt(e.type.xp, '#e8c96a', e.mesh.position);
+    Save.debouncedSave();
     if (e.isBoss) {
       S.inBoss = false;
       S.target = null;
