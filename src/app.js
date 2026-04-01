@@ -192,7 +192,46 @@ Object.keys(WTYPES).forEach(k => S.prof[k] = 0);
 //  SAVE / LOAD
 // ─────────────────────────────────────────────────────────────
 const Save = {
-  // Saves current state 'S' to both Local and Cloud (if logged in)
+
+  // ── Clean plain-data snapshot — strips Three.js objects that crash Firestore ──
+  _clean: function() {
+    return {
+      uid:         S.uid,
+      user:        S.user,
+      skin:        S.skin,
+      lv:          S.lv,
+      xp:          S.xp,
+      xpN:         S.xpN,
+      str:         S.str,
+      agi:         S.agi,
+      vit:         S.vit,
+      dex:         S.dex,
+      statPts:     S.statPts,
+      maxHp:       S.maxHp,
+      hp:          S.hp,
+      maxSp:       S.maxSp,
+      sp:          S.sp,
+      atk:         S.atk,
+      def:         S.def,
+      spd:         S.spd,
+      crit:        S.crit,
+      critMult:    S.critMult,
+      gold:        S.gold,
+      wtype:       S.wtype,
+      prof:        S.prof,
+      inv:         S.inv,
+      eq:          S.eq,
+      bleedStacks: S.bleedStacks,
+      bleedTimer:  S.bleedTimer,
+      scd:         S.scd,
+      inBoss:      S.inBoss,
+      chatTab:     S.chatTab,
+      // ❌ NEVER save: target, bleedTarget, iF, inSafe
+      //    They hold live Three.js mesh objects — saving them crashes
+      //    Firestore (silently!) and breaks JSON.stringify mid-combat
+    };
+  },
+
   save: function() {
     this.saveLocal();
     this.saveCloud();
@@ -200,16 +239,19 @@ const Save = {
 
   saveLocal: function() {
     if (!S) return;
-    localStorage.setItem('ygg_save_v1', JSON.stringify(S));
+    try {
+      localStorage.setItem('ygg_save_v1', JSON.stringify(this._clean()));
+    } catch (e) {
+      console.error('[Save] Local save failed:', e);
+    }
   },
 
   saveCloud: async function() {
-    if (fbOK && fbAuth.currentUser && S) {
-      try {
-        await fbDb.collection('saves').doc(fbAuth.currentUser.uid).set(S);
-      } catch (e) {
-        console.error('[Save] Cloud sync failed:', e);
-      }
+    if (!fbOK || !fbAuth.currentUser || !S) return;
+    try {
+      await fbDb.collection('saves').doc(fbAuth.currentUser.uid).set(this._clean());
+    } catch (e) {
+      console.error('[Save] Cloud sync failed:', e);
     }
   },
 
