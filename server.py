@@ -26,21 +26,19 @@ try:
     import firebase_admin
     from firebase_admin import credentials, firestore, auth as fb_auth
     if not firebase_admin._apps:
-        # Place your serviceAccountKey.json in the same folder as server.py
         import os, json
-            _cred_json = os.environ.get("FIREBASE_CREDENTIALS")
-            if _cred_json:
-                cred = credentials.Certificate(json.loads(_cred_json))
-            else:
-                cred = credentials.Certificate("serviceAccountKey.json") 
-                firebase_admin.initialize_app(cred)
-            _db = firestore.client()
+        _cred_json = os.environ.get("FIREBASE_CREDENTIALS")
+        if _cred_json:
+            cred = credentials.Certificate(json.loads(_cred_json))
+        else:
+            cred = credentials.Certificate("serviceAccountKey.json")
+        firebase_admin.initialize_app(cred)
+    _db = firestore.client()
     FIREBASE_OK = True
 except Exception as e:
     print(f"[Server] Firebase Admin not available: {e}")
     FIREBASE_OK = False
     _db = None
-
 # ─────────────────────────────────────────────────────────────────────────────
 #  GAME DATA  (mirrored from app.js — single source of truth is now here)
 # ─────────────────────────────────────────────────────────────────────────────
